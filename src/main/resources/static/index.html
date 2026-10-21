@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkinCare Copilot · Day 1</title>
+  <style>
+    body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #263238; }
+    #messages { min-height: 280px; border: 1px solid #ddd; padding: 1rem; border-radius: 8px; }
+    .message { margin: .7rem 0; white-space: pre-wrap; }
+    .user { color: #126ca5; }
+    .error { color: #b42318; }
+    form { display: flex; gap: .5rem; margin-top: 1rem; }
+    input { flex: 1; padding: .7rem; }
+    button { padding: .7rem 1rem; }
+  </style>
+</head>
+<body>
+  <h1>SkinCare Copilot</h1>
+  <p>Day 1：单轮聊天演示。当前没有画像、会话记忆或资料检索，请勿输入真实病历。</p>
+  <div id="messages" aria-live="polite"></div>
+  <form id="chat-form">
+    <input id="message" aria-label="消息" maxlength="2000" required placeholder="输入一条消息">
+    <button id="send" type="submit">发送</button>
+  </form>
+  <script>
+    const form = document.querySelector('#chat-form');
+    const input = document.querySelector('#message');
+    const messages = document.querySelector('#messages');
+    const send = document.querySelector('#send');
+    function append(role, content, className = '') {
+      const line = document.createElement('div');
+      line.className = `message ${className}`;
+      line.textContent = `${role}：${content}`; // 文本渲染，避免把模型输出当 HTML 执行。
+      messages.append(line);
+    }
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (!message) return;
+      append('我', message, 'user');
+      input.value = '';
+      send.disabled = true;
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message})
+        });
+        const data = await response.json();
+        append(response.ok ? '助手' : '错误', data.answer, response.ok ? '' : 'error');
+      } catch (error) {
+        append('错误', '请求失败，请检查后端是否运行。', 'error');
+      } finally {
+        send.disabled = false;
+        input.focus();
+      }
+    });
+  </script>
+</body>
+</html>
