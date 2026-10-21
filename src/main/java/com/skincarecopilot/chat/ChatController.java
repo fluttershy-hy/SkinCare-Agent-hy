@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.skincarecopilot.profile.ProfileService;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -25,7 +26,12 @@ public class ChatController {
         if (request.message().length() > 2000) {
             return ResponseEntity.badRequest().body(new ChatResponse("消息不能超过 2000 字符"));
         }
-        return ResponseEntity.ok(new ChatResponse(chatService.reply(request.message().trim())));
+        try {
+            ProfileService.validateUserId(request.userId());
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(new ChatResponse(exception.getMessage()));
+        }
+        return ResponseEntity.ok(new ChatResponse(chatService.reply(request.userId(), request.message().trim())));
     }
 
     @ExceptionHandler(ModelNotConfiguredException.class)

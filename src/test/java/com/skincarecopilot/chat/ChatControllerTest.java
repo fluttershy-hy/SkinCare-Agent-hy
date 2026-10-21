@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "SKINCARE_LLM_API_KEY=")
+@SpringBootTest(properties = {"SKINCARE_LLM_API_KEY=", "spring.datasource.url=jdbc:h2:mem:chat-test;DB_CLOSE_DELAY=-1"})
 @AutoConfigureMockMvc
 class ChatControllerTest {
     @Autowired
@@ -27,7 +27,7 @@ class ChatControllerTest {
     @Test
     void explainsMissingModelKey() throws Exception {
         mvc.perform(post("/api/chat").contentType("application/json")
-                        .content("{\"message\":\"你好\"}"))
+                        .content("{\"userId\":\"demo-user\",\"message\":\"你好\"}"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("SKINCARE_LLM_API_KEY")));
     }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SkinCare Copilot · Day 1</title>
+  <title>SkinCare Copilot · Day 2</title>
   <style>
     body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #263238; }
     #messages { min-height: 280px; border: 1px solid #ddd; padding: 1rem; border-radius: 8px; }
@@ -13,11 +13,24 @@
     form { display: flex; gap: .5rem; margin-top: 1rem; }
     input { flex: 1; padding: .7rem; }
     button { padding: .7rem 1rem; }
+    label { display: block; margin: .6rem 0; }
+    #profile-status { white-space: pre-wrap; }
   </style>
 </head>
 <body>
   <h1>SkinCare Copilot</h1>
-  <p>Day 1：单轮聊天演示。当前没有画像、会话记忆或资料检索，请勿输入真实病历。</p>
+  <p>Day 2：只保存你明确确认的演示画像。聊天仍是单轮；没有资料检索。请勿输入真实病历。</p>
+  <section>
+    <h2>演示用户画像</h2>
+    <label>用户 ID <input id="user-id" value="demo-user" maxlength="40"></label>
+    <label>已确认肤质 <input id="skin-type" placeholder="例如：油性"></label>
+    <label>已确认过敏原（逗号分隔） <input id="allergens" placeholder="例如：花生, 牛奶"></label>
+    <label><input id="confirmed" type="checkbox"> 我确认以上是虚构用户主动提供的信息</label>
+    <button id="save-profile" type="button">保存画像</button>
+    <button id="load-profile" type="button">查询画像</button>
+    <p id="profile-status" aria-live="polite"></p>
+  </section>
+  <h2>单轮聊天</h2>
   <div id="messages" aria-live="polite"></div>
   <form id="chat-form">
     <input id="message" aria-label="消息" maxlength="2000" required placeholder="输入一条消息">
@@ -28,6 +41,38 @@
     const input = document.querySelector('#message');
     const messages = document.querySelector('#messages');
     const send = document.querySelector('#send');
+    const userId = document.querySelector('#user-id');
+    const profileStatus = document.querySelector('#profile-status');
+    const profileUrl = () => `/api/profiles/${encodeURIComponent(userId.value.trim())}`;
+    document.querySelector('#save-profile').addEventListener('click', async () => {
+      const allergens = document.querySelector('#allergens').value.split(',').map(item => item.trim()).filter(Boolean);
+      try {
+        const response = await fetch(profileUrl(), {
+          method: 'PUT', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({skinType: document.querySelector('#skin-type').value,
+            allergens, confirmed: document.querySelector('#confirmed').checked})
+        });
+        const data = await response.json();
+        profileStatus.textContent = response.ok ? `已保存：${data.skinType}；过敏原：${data.allergens.join('、') || '未登记'}`
+          : `保存失败：${data.error || response.status}`;
+      } catch (error) {
+        profileStatus.textContent = '请求失败，请检查后端是否运行。';
+      }
+    });
+    document.querySelector('#load-profile').addEventListener('click', async () => {
+      try {
+        const response = await fetch(profileUrl());
+        if (response.status === 404) {
+          profileStatus.textContent = '该用户尚无确认画像。';
+          return;
+        }
+        const data = await response.json();
+        profileStatus.textContent = response.ok ? `已确认肤质：${data.skinType}；过敏原：${data.allergens.join('、') || '未登记'}`
+          : `查询失败：${data.error || response.status}`;
+      } catch (error) {
+        profileStatus.textContent = '请求失败，请检查后端是否运行。';
+      }
+    });
     function append(role, content, className = '') {
       const line = document.createElement('div');
       line.className = `message ${className}`;
@@ -44,7 +89,7 @@
       try {
         const response = await fetch('/api/chat', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({message})
+          body: JSON.stringify({userId: userId.value.trim(), message})
         });
         const data = await response.json();
         append(response.ok ? '助手' : '错误', data.answer, response.ok ? '' : 'error');

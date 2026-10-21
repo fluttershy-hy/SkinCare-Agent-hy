@@ -1,4 +1,4 @@
 package com.skincarecopilot.chat;
 
-public record ChatRequest(String message) {
+public record ChatRequest(String userId, String message) {
 }
