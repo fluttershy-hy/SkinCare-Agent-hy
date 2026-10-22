@@ -31,12 +31,16 @@ public class ChatController {
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(new ChatResponse(exception.getMessage()));
         }
+        if (request.sessionId() == null || !request.sessionId().matches("[A-Za-z0-9_-]{1,64}")) {
+            return ResponseEntity.badRequest().body(new ChatResponse("会话 ID 只能由 1～64 位字母、数字、下划线或短横线组成"));
+        }
         // 餐食校验尚未实现时，不把明显的餐食请求交给模型生成未经校验的方案。
         if (UnsupportedMealRequest.matches(request.message())) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ChatResponse(
                     "当前版本尚未提供经过资料检索和过敏原校验的餐食建议。请先使用画像保存与查询功能；餐食功能完成后再试。"));
         }
-        return ResponseEntity.ok(new ChatResponse(chatService.reply(request.userId(), request.message().trim())));
+        return ResponseEntity.ok(new ChatResponse(chatService.reply(
+                request.userId(), request.sessionId(), request.message().trim())));
     }
 
     @ExceptionHandler(ModelNotConfiguredException.class)

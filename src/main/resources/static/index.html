@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SkinCare Copilot · Day 2</title>
+  <title>SkinCare Copilot · Day 3</title>
   <style>
     body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #263238; }
     #messages { min-height: 280px; border: 1px solid #ddd; padding: 1rem; border-radius: 8px; }
@@ -19,7 +19,7 @@
 </head>
 <body>
   <h1>SkinCare Copilot</h1>
-  <p>Day 2：只保存你明确确认的演示画像。聊天仍是单轮；餐食建议和带来源的知识问答尚未开放。请勿输入真实病历。</p>
+  <p>Day 3：确认画像会持久保存；近期聊天只在当前后端进程内。餐食建议和带来源的知识问答尚未开放。请勿输入真实病历。</p>
   <section>
     <h2>演示用户画像</h2>
     <label>用户 ID <input id="user-id" value="demo-user" maxlength="40"></label>
@@ -30,7 +30,8 @@
     <button id="load-profile" type="button">查询画像</button>
     <p id="profile-status" aria-live="polite"></p>
   </section>
-  <h2>单轮聊天</h2>
+  <h2>当前会话聊天</h2>
+  <p>会话 ID：<span id="session-id"></span> <button id="new-session" type="button">开始新会话</button></p>
   <div id="messages" aria-live="polite"></div>
   <form id="chat-form">
     <input id="message" aria-label="消息" maxlength="2000" required placeholder="输入一条消息">
@@ -42,6 +43,16 @@
     const messages = document.querySelector('#messages');
     const send = document.querySelector('#send');
     const userId = document.querySelector('#user-id');
+    const sessionLabel = document.querySelector('#session-id');
+    let sessionId = sessionStorage.getItem('skincare-session-id') || crypto.randomUUID();
+    sessionStorage.setItem('skincare-session-id', sessionId);
+    sessionLabel.textContent = sessionId;
+    document.querySelector('#new-session').addEventListener('click', () => {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem('skincare-session-id', sessionId);
+      sessionLabel.textContent = sessionId;
+      messages.replaceChildren();
+    });
     const profileStatus = document.querySelector('#profile-status');
     const profileUrl = () => `/api/profiles/${encodeURIComponent(userId.value.trim())}`;
     document.querySelector('#save-profile').addEventListener('click', async () => {
@@ -89,7 +100,7 @@
       try {
         const response = await fetch('/api/chat', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({userId: userId.value.trim(), message})
+          body: JSON.stringify({userId: userId.value.trim(), sessionId, message})
         });
         const data = await response.json();
         append(response.ok ? '助手' : '错误', data.answer, response.ok ? '' : 'error');

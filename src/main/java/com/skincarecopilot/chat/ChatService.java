@@ -2,7 +2,9 @@ package com.skincarecopilot.chat;
 
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import com.skincarecopilot.profile.ProfileService;
 import com.skincarecopilot.profile.ProfileTools;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,22 +16,26 @@ public class ChatService {
     private final String baseUrl;
     private final String modelName;
     private final ProfileService profiles;
+    private final ChatMemoryRegistry memories;
 
     public ChatService(@Value("${SKINCARE_LLM_API_KEY:}") String apiKey,
                        @Value("${SKINCARE_LLM_BASE_URL:https://api.deepseek.com}") String baseUrl,
                        @Value("${SKINCARE_LLM_MODEL:deepseek-flash}") String modelName,
-                       ProfileService profiles) {
+                       ProfileService profiles,
+                       ChatMemoryRegistry memories) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.modelName = modelName;
         this.profiles = profiles;
+        this.memories = memories;
     }
 
-    public String reply(String userId, String message) {
+    public String reply(String userId, String sessionId, String message) {
         if (apiKey.isBlank()) {
             throw new ModelNotConfiguredException();
         }
-        // Day 2 仍是单轮对话；每次请求只绑定当前用户的只读画像工具。
+        ConversationId id = new ConversationId(userId, sessionId);
+        var memory = memories.get(id);
         var model = OpenAiChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
@@ -37,9 +43,13 @@ public class ChatService {
                 .build();
         Assistant assistant = AiServices.builder(Assistant.class)
                 .chatModel(model)
+                .chatMemoryProvider(memoryId -> memories.get((ConversationId) memoryId))
                 .tools(new ProfileTools(profiles, userId))
                 .build();
-        return assistant.chat(message);
+        // 同一会话串行处理，避免两个并发请求交错写入近期对话；不同会话可以并行。
+        synchronized (memory) {
+            return assistant.chat(id, message);
+        }
     }
 
     interface Assistant {
@@ -48,6 +58,6 @@ public class ChatService {
                 + "绝不把聊天中的推断当作已确认画像。尚无知识库和餐食过敏原校验，"
                 + "不要生成餐食方案、菜单、具体食材搭配或忌口建议。遇到需要核实的护肤或饮食事实，"
                 + "说明目前无法核实来源，不编造引用。")
-        String chat(String message);
+        String chat(@MemoryId ConversationId id, @UserMessage String message);
     }
 }
