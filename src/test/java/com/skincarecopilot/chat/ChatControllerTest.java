@@ -31,4 +31,12 @@ class ChatControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("SKINCARE_LLM_API_KEY")));
     }
+
+    @Test
+    void refusesUnvalidatedMealPlanBeforeCallingModel() throws Exception {
+        mvc.perform(post("/api/chat").contentType("application/json")
+                        .content("{\"userId\":\"demo-user\",\"message\":\"我对虾过敏，给我一日饮食建议\"}"))
+                .andExpect(status().isNotImplemented())
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("尚未提供")));
+    }
 }

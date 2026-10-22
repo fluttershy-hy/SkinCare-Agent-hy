@@ -31,6 +31,11 @@ public class ChatController {
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(new ChatResponse(exception.getMessage()));
         }
+        // 餐食校验尚未实现时，不把明显的餐食请求交给模型生成未经校验的方案。
+        if (UnsupportedMealRequest.matches(request.message())) {
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ChatResponse(
+                    "当前版本尚未提供经过资料检索和过敏原校验的餐食建议。请先使用画像保存与查询功能；餐食功能完成后再试。"));
+        }
         return ResponseEntity.ok(new ChatResponse(chatService.reply(request.userId(), request.message().trim())));
     }
 
