@@ -18,15 +18,17 @@
 
 ## 运行 Day 1～2
 
-要求 JDK 17+ 和 Maven 3.9+。项目以 Java 17 为编译目标，固定 Spring Boot 3.5.16、LangChain4j OpenAI 模块 1.22.0。模型应支持 OpenAI 兼容的聊天接口。
+要求 JDK 17+ 和 Maven 3.9+。项目以 Java 17 为编译目标，固定 Spring Boot 3.5.16、LangChain4j 1.22.0。默认使用 DeepSeek 的 OpenAI 兼容接口，模型需支持工具调用才能查询画像。
 
 ```bash
 export SKINCARE_LLM_API_KEY='在终端或环境设置里填入密钥'
-export SKINCARE_LLM_BASE_URL='https://api.openai.com/v1' # 使用其他兼容接口时修改
-export SKINCARE_LLM_MODEL='gpt-4o-mini'                 # 按提供商支持情况修改
+# 默认：SKINCARE_LLM_BASE_URL=https://api.deepseek.com
+# 默认：SKINCARE_LLM_MODEL=deepseek-flash
 mvn test
 mvn spring-boot:run
 ```
+
+在 IntelliJ IDEA 中运行时，打开 `SkinCareCopilotApplication` 的运行配置，在 **Environment variables** 添加 `SKINCARE_LLM_API_KEY`。如果改用 `deepseek-v4-pro`，再添加 `SKINCARE_LLM_MODEL=deepseek-v4-pro`。这里使用的是 OpenAI 兼容接口地址；`https://api.deepseek.com/anthropic` 是另一种协议的地址，不适用于当前 `OpenAiChatModel`。请以 DeepSeek 控制台显示的可用模型和工具调用支持情况为准。
 
 打开本机 `http://localhost:8080/`。先为虚构用户填写并勾选确认画像，再点击“保存画像”或“查询画像”。画像写入项目目录下的 `data/`（已被 Git 忽略）；再次启动应用仍可读取。未勾选确认时，后端拒绝保存。`GET /api/profiles/{userId}` 查询，`PUT /api/profiles/{userId}` 保存，保存 JSON 例如 `{"skinType":"油性","allergens":["花生"],"confirmed":true}`。
 

@@ -16,8 +16,8 @@ public class ChatService {
     private final ProfileService profiles;
 
     public ChatService(@Value("${SKINCARE_LLM_API_KEY:}") String apiKey,
-                       @Value("${SKINCARE_LLM_BASE_URL:https://api.openai.com/v1}") String baseUrl,
-                       @Value("${SKINCARE_LLM_MODEL:gpt-4o-mini}") String modelName,
+                       @Value("${SKINCARE_LLM_BASE_URL:https://api.deepseek.com}") String baseUrl,
+                       @Value("${SKINCARE_LLM_MODEL:deepseek-flash}") String modelName,
                        ProfileService profiles) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
