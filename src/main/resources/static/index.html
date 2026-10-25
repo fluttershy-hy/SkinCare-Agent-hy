@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SkinCare Copilot · Day 3</title>
+  <title>SkinCare Copilot · Day 4</title>
   <style>
     body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #263238; }
     #messages { min-height: 280px; border: 1px solid #ddd; padding: 1rem; border-radius: 8px; }
@@ -15,11 +15,27 @@
     button { padding: .7rem 1rem; }
     label { display: block; margin: .6rem 0; }
     #profile-status { white-space: pre-wrap; }
+    .knowledge-hit { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    .knowledge-hit p, .knowledge-hit blockquote { white-space: pre-wrap; overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
   <h1>SkinCare Copilot</h1>
-  <p>Day 3：确认画像会持久保存；近期聊天只在当前后端进程内。餐食建议和带来源的知识问答尚未开放。请勿输入真实病历。</p>
+  <p>Day 4：可单独检索已导入的知识片段并查看来源。下方聊天仍只支持 Day 1～3，尚未接入知识检索。请勿输入真实病历。</p>
+  <section aria-labelledby="knowledge-title">
+    <h2 id="knowledge-title">知识片段与来源</h2>
+    <p>这里展示资料片段及人工译文，不生成综合回答。相似度用于排序，不代表医学证据等级。</p>
+    <p id="knowledge-status" aria-live="polite">正在读取知识目录……</p>
+    <details>
+      <summary>查看已导入来源</summary>
+      <ul id="knowledge-sources"></ul>
+    </details>
+    <form id="knowledge-form">
+      <input id="knowledge-query" aria-label="知识检索" maxlength="500" required placeholder="例如：痤疮皮肤如何清洁？">
+      <button id="knowledge-search" type="submit">检索片段</button>
+    </form>
+    <div id="knowledge-results" aria-live="polite"></div>
+  </section>
   <section>
     <h2>演示用户画像</h2>
     <label>用户 ID <input id="user-id" value="demo-user" maxlength="40"></label>
@@ -38,6 +54,74 @@
     <button id="send" type="submit">发送</button>
   </form>
   <script>
+    const knowledgeStatus = document.querySelector('#knowledge-status');
+    const knowledgeResults = document.querySelector('#knowledge-results');
+    const knowledgeSearch = document.querySelector('#knowledge-search');
+    function sourceLink(source) {
+      const link = document.createElement('a');
+      link.textContent = `${source.publisher} · ${source.title} · ${source.section}`;
+      const url = new URL(source.url);
+      if (url.protocol === 'https:' && ['www.aad.org', 'www.nice.org.uk'].includes(url.hostname)) {
+        link.href = url.href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+      }
+      return link;
+    }
+    async function loadKnowledgeSources() {
+      try {
+        const response = await fetch('/api/knowledge/sources');
+        if (!response.ok) throw new Error('catalog');
+        const catalog = await response.json();
+        knowledgeStatus.textContent = catalog.entryCount
+          ? `已导入 ${catalog.entryCount} 条知识，切分为 ${catalog.chunkCount} 个片段；使用本地中文 Embedding。`
+          : '尚无已核实的知识条目。待核实 AAD/NICE 官网原文后导入，当前不会展示未核实内容。';
+        const list = document.querySelector('#knowledge-sources');
+        list.replaceChildren();
+        for (const source of catalog.entries) {
+          const item = document.createElement('li');
+          item.append(sourceLink(source), document.createTextNode(`（核实于 ${source.verifiedOn}）`));
+          list.append(item);
+        }
+      } catch (error) {
+        knowledgeStatus.textContent = '知识目录读取失败，请检查后端是否运行。';
+      }
+    }
+    loadKnowledgeSources();
+    document.querySelector('#knowledge-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const query = document.querySelector('#knowledge-query').value.trim();
+      if (!query) return;
+      knowledgeSearch.disabled = true;
+      knowledgeResults.replaceChildren();
+      try {
+        const response = await fetch('/api/knowledge/search', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({query, topK: 3})
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '检索失败');
+        if (!data.matches.length) {
+          knowledgeResults.textContent = '未找到达到相似度阈值的片段，或知识库尚未导入内容。';
+        }
+        for (const hit of data.matches) {
+          const card = document.createElement('article');
+          card.className = 'knowledge-hit';
+          const excerpt = document.createElement('p');
+          excerpt.textContent = `人工译文片段：${hit.chunk.text}`;
+          const metadata = document.createElement('p');
+          metadata.textContent = `片段 ${hit.chunk.id} · 相似度 ${hit.score.toFixed(3)} · 核实于 ${hit.chunk.source.verifiedOn}`;
+          const original = document.createElement('blockquote');
+          original.textContent = `对应条目原文：${hit.chunk.source.originalExcerpt}`;
+          card.append(sourceLink(hit.chunk.source), metadata, excerpt, original);
+          knowledgeResults.append(card);
+        }
+      } catch (error) {
+        knowledgeResults.textContent = error.message || '检索失败，请稍后重试。';
+      } finally {
+        knowledgeSearch.disabled = false;
+      }
+    });
     const form = document.querySelector('#chat-form');
     const input = document.querySelector('#message');
     const messages = document.querySelector('#messages');

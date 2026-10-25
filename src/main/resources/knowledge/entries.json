@@ -1,0 +1,62 @@
+[
+  {
+    "id": "acne-diet-evidence",
+    "publisher": "AAD",
+    "title": "Can the right diet get rid of acne?",
+    "url": "https://www.aad.org/public/diseases/acne/causes/diet",
+    "section": "A low-glycemic diet may lead to fewer pimples",
+    "verifiedOn": "2026-10-24",
+    "originalExcerpt": "While these findings show that following a low-glycemic diet can lead to fewer breakouts, other studies have not found a connection between a high-glycemic diet and acne. More research is needed to know for sure.",
+    "text": "AAD 介绍：低升糖负荷饮食与痤疮的研究结果并不一致。有些研究发现痤疮减少，另一些研究没有发现高升糖负荷饮食与痤疮的关联；仍需要更多研究才能确定，不能声称食谱可以治疗痤疮。"
+  },
+  {
+    "id": "rosacea-triggers-vary",
+    "publisher": "AAD",
+    "title": "Triggers could be causing your rosacea flare-ups",
+    "url": "https://www.aad.org/public/diseases/rosacea/triggers/find",
+    "section": "Important to know what triggers your rosacea",
+    "verifiedOn": "2026-10-24",
+    "originalExcerpt": "Anything that causes your rosacea to flare is called a trigger. Sunlight and hairspray are common rosacea triggers. Other common triggers include heat, stress, alcohol, and spicy foods. Triggers differ from person to person.",
+    "text": "AAD 说明：玫瑰痤疮的加重诱因因人而异。阳光、发胶、热、压力、酒精和辛辣食物属于常见诱因，并非每个人都会被同一种因素诱发。这里讨论的是已确诊玫瑰痤疮的诱因，不能仅凭泛红自行诊断。"
+  },
+  {
+    "id": "rosacea-fragrance-free",
+    "publisher": "AAD",
+    "title": "7 rosacea skin care tips dermatologists recommend",
+    "url": "https://www.aad.org/public/diseases/rosacea/triggers/tips",
+    "section": "Go fragrance free",
+    "verifiedOn": "2026-10-24",
+    "originalExcerpt": "To reduce the likelihood of a product irritating your skin, choose fragrance-free (rather than unscented) products.",
+    "text": "AAD 针对玫瑰痤疮易受刺激的皮肤建议：选择标注为 fragrance-free（无香料）的产品，以降低刺激可能；unscented（无香味）不等同于无香料。此条不是对所有泛红原因的诊断。"
+  },
+  {
+    "id": "eczema-child-triggers",
+    "publisher": "NICE",
+    "title": "Atopic eczema in under 12s: diagnosis and management",
+    "url": "https://www.nice.org.uk/guidance/cg57/chapter/Recommendations",
+    "section": "1.4 Identifying and managing trigger factors · 1.4.1.1",
+    "verifiedOn": "2026-10-24",
+    "originalExcerpt": "When assessing children with atopic eczema, identify potential trigger factors, including:",
+    "text": "NICE 关于 12 岁以下特应性湿疹患儿的建议：评估时应识别可能的诱因；本页列出肥皂和清洁剂等刺激物、皮肤感染和接触性过敏原。此建议针对儿童特应性湿疹，不等于任何泛红都属于过敏，也不能据此自行确认过敏原。"
+  },
+  {
+    "id": "eczema-child-emollients",
+    "publisher": "NICE",
+    "title": "Atopic eczema in under 12s: diagnosis and management",
+    "url": "https://www.nice.org.uk/guidance/cg57/chapter/Recommendations",
+    "section": "1.5 Treatment · 1.5.1.1 and 1.5.1.4",
+    "verifiedOn": "2026-10-24",
+    "originalExcerpt": "Offer children with atopic eczema a choice of unperfumed emollients to use every day for moisturising.",
+    "text": "NICE 针对 12 岁以下特应性湿疹患儿建议：为患儿提供无香料润肤剂选择，供日常保湿。具体产品及使用方式应结合患儿情况与专业建议。"
+  },
+  {
+    "id": "contact-dermatitis-irritant-allergic",
+    "publisher": "AAD",
+    "title": "Eczema types: Contact dermatitis overview",
+    "url": "https://www.aad.org/public/diseases/eczema/types/contact-dermatitis",
+    "section": "What is contact dermatitis?",
+    "verifiedOn": "2026-10-24",
+    "originalExcerpt": "When something that touches your skin either irritates it or causes an allergic skin reaction, you develop this skin disease. The first sign is often itchy skin, followed by a rash.",
+    "text": "AAD 解释：接触性皮炎可由接触皮肤的物质造成刺激，或由接触性过敏反应引起；常见表现可能先是瘙痒，随后出现皮疹。刺激性反应与过敏性反应并不相同，不能只凭“泛红”就判断原因。反复或不明原因皮疹应由皮肤科专业人员评估。"
+  }
+]
