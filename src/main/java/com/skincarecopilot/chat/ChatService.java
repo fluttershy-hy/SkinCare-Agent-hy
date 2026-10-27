@@ -10,6 +10,7 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ public class ChatService {
     private final ChatMemoryRegistry memories;
     private final KnowledgeService knowledge;
     private final ChatRouter router;
+    private final ConcurrentHashMap<ConversationId, String> lastGroundedQuestion = new ConcurrentHashMap<>();
 
     @Autowired
     public ChatService(@Value("${SKINCARE_LLM_API_KEY:}") String apiKey,
@@ -55,12 +57,19 @@ public class ChatService {
 
     public ChatResponse replyWithSources(String userId, String sessionId, String message) {
         ChatRoute route = router.route(message);
+        ConversationId id = new ConversationId(userId, sessionId);
+        // A generic follow-up must re-retrieve with the previous question; chat memory alone
+        // is not evidence and must never cause old citations to be silently reused.
+        String previousQuestion = lastGroundedQuestion.get(id);
+        boolean groundedFollowUp = route == ChatRoute.SMALL_TALK && previousQuestion != null
+                && router.isContextualFollowUp(message);
+        if (groundedFollowUp) route = ChatRoute.COMBINED;
         log.info("route={} userId={} sessionId={}", route, userId, sessionId);
         List<ChatResponse.Source> sources = List.of();
         String prompt = message;
         if (route == ChatRoute.KNOWLEDGE || route == ChatRoute.COMBINED) {
             if (knowledge == null) throw new IllegalStateException("知识检索服务未配置");
-            var result = knowledge.search(message, 3);
+            var result = knowledge.search(groundedFollowUp ? previousQuestion + "。" + message : message, 3);
             if (result.matches().isEmpty()) {
                 // Do not ask the model to invent an answer or a citation.
                 return new ChatResponse(INSUFFICIENT, route, List.of());
@@ -86,7 +95,6 @@ public class ChatService {
             }
         }
         if (apiKey.isBlank()) throw new ModelNotConfiguredException();
-        ConversationId id = new ConversationId(userId, sessionId);
         var memory = memories.get(id);
         var model = OpenAiChatModel.builder().apiKey(apiKey).baseUrl(baseUrl).modelName(modelName).build();
         Assistant assistant = AiServices.builder(Assistant.class)
@@ -95,6 +103,7 @@ public class ChatService {
                 .tools(new ProfileTools(profiles, userId)).build();
         synchronized (memory) {
             String answer = assistant.chat(id, prompt);
+            if (!sources.isEmpty()) lastGroundedQuestion.put(id, groundedFollowUp ? previousQuestion : message);
             // Citations are attached by Java from actual matches, never invented by model text.
             return new ChatResponse(answer, route, sources);
         }

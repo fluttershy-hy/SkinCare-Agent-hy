@@ -42,6 +42,14 @@ class ChatRoutingIntegrationTest {
             assertEquals("Original excerpt", response.sources().get(0).excerpt());
             assertTrue(requestBody.get().toString().contains(source.text()));
             assertTrue(requestBody.get().toString().contains("只依据下列已核实片段回答"));
+            ChatResponse followUp = service.replyWithSources("demo-user", "session-1", "请结合我的情况给点建议");
+            assertEquals(ChatRoute.COMBINED, followUp.route());
+            assertFalse(followUp.sources().isEmpty());
+            verify(knowledge).search(eq("玫瑰痤疮有什么诱因。请结合我的情况给点建议"), eq(3));
+            // A different conversation never inherits the previous question or sources.
+            assertThrows(ModelNotConfiguredException.class, () -> new ChatService("", endpoint(server),
+                    "fake-model", mock(ProfileService.class), new ChatMemoryRegistry(), knowledge,
+                    new ChatRouter()).replyWithSources("demo-user", "session-2", "请结合我的情况给点建议"));
         } finally { server.stop(0); }
     }
 

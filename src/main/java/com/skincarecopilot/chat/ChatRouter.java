@@ -20,4 +20,8 @@ public class ChatRouter {
         if (fact) return ChatRoute.KNOWLEDGE;
         return ChatRoute.SMALL_TALK;
     }
+
+    public boolean isContextualFollowUp(String message) {
+        return message.matches(".*(?:结合我的情况|根据我的情况|接着说|那我该怎么办|给点建议|刚才说的|这个产品|它的成分).*之?.*");
+    }
 }

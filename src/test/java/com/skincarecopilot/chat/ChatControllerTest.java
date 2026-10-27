@@ -47,4 +47,23 @@ class ChatControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("会话 ID")));
     }
+
+    @Test
+    void brandOnlyReactionRequestsSpecificProductWithoutClaimingAllergen() throws Exception {
+        mvc.perform(post("/api/chat").contentType("application/json")
+                        .content("{\"userId\":\"demo-user\",\"sessionId\":\"session-a\",\"message\":\"我可能对薇诺娜过敏\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("具体产品全名")));
+    }
+
+    @Test
+    void exactProductReactionReportsMissingOfficialSearchConfig() throws Exception {
+        mvc.perform(post("/api/chat").contentType("application/json")
+                        .content("{\"userId\":\"demo-user\",\"sessionId\":\"session-a\",\"message\":\"我可能对示例品牌舒缓保湿霜过敏\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
+                .andExpect(jsonPath("$.sources").isEmpty())
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("官网域名")));
+    }
 }

@@ -36,6 +36,15 @@
     </form>
     <div id="knowledge-results" aria-live="polite"></div>
   </section>
+  <section aria-labelledby="product-title">
+    <h2 id="product-title">具体产品的官方页面查询</h2>
+    <p>输入完整产品名；品牌名不足以确定配方。搜索摘要仅用于定位官网页面，不能诊断致敏成分。若官网未列完整成分表，请勿据此判断。</p>
+    <form id="product-form">
+      <input id="product-name" aria-label="具体产品全名" maxlength="120" required placeholder="输入包装上的完整产品名">
+      <button id="product-search" type="submit">查找官网页面</button>
+    </form>
+    <div id="product-results" aria-live="polite"></div>
+  </section>
   <section>
     <h2>演示用户画像</h2>
     <label>用户 ID <input id="user-id" value="demo-user" maxlength="40"></label>
@@ -54,6 +63,36 @@
     <button id="send" type="submit">发送</button>
   </form>
   <script>
+    document.querySelector('#product-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const result = document.querySelector('#product-results');
+      result.replaceChildren();
+      try {
+        const response = await fetch('/api/products/search', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({productName: document.querySelector('#product-name').value.trim()})
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '搜索失败');
+        const note = document.createElement('p');
+        note.textContent = data.note;
+        result.append(note);
+        for (const page of data.officialPageCandidates) {
+          const item = document.createElement('p');
+          const link = document.createElement('a');
+          const url = new URL(page.url);
+          if (url.protocol !== 'https:') continue;
+          link.href = url.href;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = page.title;
+          item.append(link, document.createTextNode(`：${page.searchSnippet}`));
+          result.append(item);
+        }
+      } catch (error) {
+        result.textContent = error.message || '搜索失败。';
+      }
+    });
     const knowledgeStatus = document.querySelector('#knowledge-status');
     const knowledgeResults = document.querySelector('#knowledge-results');
     const knowledgeSearch = document.querySelector('#knowledge-search');
