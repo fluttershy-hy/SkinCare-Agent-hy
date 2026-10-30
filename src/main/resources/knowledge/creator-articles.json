@@ -1,24 +1,199 @@
 [
   {
-    "id": "miriam-ingredient-myths",
+    "id": "miriam-guide-to-apply-retinol-and-pigment-test",
     "author": "温唯",
-    "title": "10種該害怕與不該害怕的化妝保養品成分,小心別掉入廣告陷阱",
-    "url": "https://miriammibao.com/ingredient/",
-    "publishedOn": "2018-09-30",
+    "title": "A醇終極指南-如何有效作用/敏弱肌建立耐受",
+    "url": "https://miriammibao.com/guide-to-apply-retinol-and-pigment-test/",
+    "publishedOn": "2023-12-10",
     "reviewedOn": "2026-10-30",
-    "commonQuestion": "只看成分名称与顺序，能否判断产品实际效果和浓度？",
-    "keywords": ["成分表", "浓度", "排序", "烟酰胺", "功效"],
-    "scope": "仅记录文章提出的常见问题，供延伸阅读；不将文中的配方比例、风险或功效断言当作事实依据。"
+    "commonQuestion": "A醇、敏弱肌、耐受有哪些常见误区？",
+    "keywords": [
+      "A醇",
+      "敏弱肌",
+      "耐受"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
   },
   {
-    "id": "miriam-comedone-ratings",
+    "id": "miriam-granactive-retinoid-and-hydroxypinacolone-retinoate",
+    "author": "温唯",
+    "title": "新一代類維生素A衍生物Granactive Retinoid™和Hydroxypinacolone Retinoate ( HPR )以及A醇",
+    "url": "https://miriammibao.com/granactive-retinoid-and-hydroxypinacolone-retinoate/",
+    "publishedOn": "2021-08-21",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "HPR 与 A 醇有哪些常见误区？",
+    "keywords": [
+      "HPR 与 A 醇"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-derivative-of-ascorbic-acid",
+    "author": "温唯",
+    "title": "容易氧化的抗氧化明星美白成分-VC（維他命C）和它的衍生物們",
+    "url": "https://miriammibao.com/derivative-of-ascorbic-acid/",
+    "publishedOn": "2021-08-18",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "维生素 C 衍生物有哪些常见误区？",
+    "keywords": [
+      "维生素 C 衍生物"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-antioxidant-pycnogenol",
+    "author": "温唯",
+    "title": "專利成份Pycnogenol®-抗氧化/阻止酪胺酸酶轉錄黑色素/結合膠原蛋白",
+    "url": "https://miriammibao.com/antioxidant-pycnogenol/",
+    "publishedOn": "2021-08-01",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "碧萝芷、抗氧化有哪些常见误区？",
+    "keywords": [
+      "碧萝芷",
+      "抗氧化"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-preservative",
+    "author": "温唯",
+    "title": "50種常見防腐劑總質詢,戳破無添加防腐劑的騙局!",
+    "url": "https://miriammibao.com/preservative/",
+    "publishedOn": "2020-07-25",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "防腐剂、无添加有哪些常见误区？",
+    "keywords": [
+      "防腐剂",
+      "无添加"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-comedones-ingredients-in-skin-care",
     "author": "温唯",
     "title": "匡列200多種致粉刺成分,油痘肌請小心這些成分的彩妝保養品(持續更新中)",
     "url": "https://miriammibao.com/comedones-ingredients-in-skin-care/",
     "publishedOn": "2020-07-07",
     "reviewedOn": "2026-10-30",
-    "commonQuestion": "成分网站的致粉刺评分能否直接预测整款产品或个人使用后的反应？",
-    "keywords": ["致粉刺", "致痘", "痘痘", "油肌", "评分"],
-    "scope": "仅记录文章讨论的话题，供延伸阅读；不导入其中的200多种成分风险表或个人致痘断言。"
+    "commonQuestion": "致粉刺评分有哪些常见误区？",
+    "keywords": [
+      "致粉刺评分"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-looks-white",
+    "author": "温唯",
+    "title": "破解美白迷思｜美白呀美白!到底怎樣才能變白?美白成分又有哪些?",
+    "url": "https://miriammibao.com/looks-white/",
+    "publishedOn": "2020-05-30",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "美白、提亮有哪些常见误区？",
+    "keywords": [
+      "美白",
+      "提亮"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-cationic-surfactants",
+    "author": "温唯",
+    "title": "不推薦潤髮是因為陽離子界面活性劑,其實沐浴洗髮乳也偷加了",
+    "url": "https://miriammibao.com/cationic-surfactants/",
+    "publishedOn": "2020-04-15",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "阳离子表面活性剂有哪些常见误区？",
+    "keywords": [
+      "阳离子表面活性剂"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-emollients",
+    "author": "温唯",
+    "title": "脂肪酸脂肪醇合成酯潤膚劑,誰是垃圾成分?聽聽毛孔怎麼說",
+    "url": "https://miriammibao.com/emollients/",
+    "publishedOn": "2020-01-11",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "润肤剂、脂肪酸、脂肪醇、酯有哪些常见误区？",
+    "keywords": [
+      "润肤剂",
+      "脂肪酸",
+      "脂肪醇",
+      "酯"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-surfactant",
+    "author": "温唯",
+    "title": "聊聊界面活性劑/乳化劑,以及與問題肌之間的愛恨情仇",
+    "url": "https://miriammibao.com/surfactant/",
+    "publishedOn": "2019-12-29",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "表面活性剂、乳化剂有哪些常见误区？",
+    "keywords": [
+      "表面活性剂",
+      "乳化剂"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-oil",
+    "author": "温唯",
+    "title": "植萃/芳療/油保養?真的是皮膚的犒賞?或者是粉刺的豢養?",
+    "url": "https://miriammibao.com/oil/",
+    "publishedOn": "2019-02-20",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "植物油、油保养有哪些常见误区？",
+    "keywords": [
+      "植物油",
+      "油保养"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-cleansing",
+    "author": "温唯",
+    "title": "對付痘痘/粉刺/過敏,從正確洗臉+認識界面活性劑開始",
+    "url": "https://miriammibao.com/cleansing/",
+    "publishedOn": "2018-12-15",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "洁面、过度清洁有哪些常见误区？",
+    "keywords": [
+      "洁面",
+      "过度清洁"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-ingredient",
+    "author": "温唯",
+    "title": "10種該害怕與不該害怕的化妝保養品成分,小心別掉入廣告陷阱",
+    "url": "https://miriammibao.com/ingredient/",
+    "publishedOn": "2018-09-30",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "成分表、浓度、配方有哪些常见误区？",
+    "keywords": [
+      "成分表",
+      "浓度",
+      "配方",
+      "烟酰胺",
+      "排序"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
+  },
+  {
+    "id": "miriam-ingredientstool",
+    "author": "温唯",
+    "title": "6個最實用的成分查詢網站｜友善保養-從認識化妝保養品成分開始",
+    "url": "https://miriammibao.com/ingredientstool/",
+    "publishedOn": "2018-09-25",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "成分查询网站有哪些常见误区？",
+    "keywords": [
+      "成分查询网站"
+    ],
+    "scope": "文章观点仅作科普讨论；事实结论需看证据类型和适用范围。"
   }
 ]

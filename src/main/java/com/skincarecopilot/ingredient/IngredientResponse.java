@@ -7,5 +7,5 @@ public record IngredientResponse(String answer, List<Product> products, List<Ale
                                  List<String> limitations) {
     public record Product(String name, List<IngredientNames.Parsed> ingredients) {}
     public record Alert(String product, String confirmedName, String matchedIngredient, int position) {}
-    public record Source(String title, String url, String section, String verifiedOn) {}
+    public record Source(String publisher, String title, String url, String section, String verifiedOn) {}
 }

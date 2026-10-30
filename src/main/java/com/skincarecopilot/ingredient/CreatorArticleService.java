@@ -18,7 +18,7 @@ public class CreatorArticleService {
     public CreatorArticleService(ObjectMapper json) throws IOException {
         try (var input = new ClassPathResource("knowledge/creator-articles.json").getInputStream()) {
             List<Article> loaded = json.readValue(input, new TypeReference<>() {});
-            if (loaded == null || loaded.size() > 10) throw new IllegalArgumentException("博主文章目录最多 10 项");
+            if (loaded == null || loaded.size() > 20) throw new IllegalArgumentException("博主文章目录最多 20 项");
             var ids = new HashSet<String>();
             for (Article article : loaded) {
                 if (article == null || article.id() == null || !article.id().matches("[a-z0-9-]{1,80}")

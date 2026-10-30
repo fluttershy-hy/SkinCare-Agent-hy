@@ -21,8 +21,8 @@ class KnowledgeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.model").value("bge-small-zh-v1.5-q"))
                 .andExpect(jsonPath("$.dimensions").value(512))
-                .andExpect(jsonPath("$.entryCount").value(6))
-                .andExpect(jsonPath("$.chunkCount").value(6))
+                .andExpect(jsonPath("$.entryCount").value(20))
+                .andExpect(jsonPath("$.chunkCount").value(20))
                 .andExpect(jsonPath("$.entries").isArray());
     }
 
@@ -46,6 +46,16 @@ class KnowledgeControllerTest {
                 .andExpect(jsonPath("$.matches[0].chunk.entryId").value("eczema-child-emollients"))
                 .andExpect(jsonPath("$.matches[0].chunk.source.publisher").value("NICE"))
                 .andExpect(jsonPath("$.matches[0].chunk.source.section").value("1.5 Treatment · 1.5.1.1 and 1.5.1.4"));
+    }
+
+    @Test
+    void creatorViewpointIsSearchableWithItsOwnPublisherAndLink() throws Exception {
+        mvc.perform(post("/api/knowledge/search").contentType("application/json")
+                        .content("{\"query\":\"A醇 HPR 有什么区别？\",\"topK\":3}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.matches[0].chunk.source.publisher").value("MiriamMibao"))
+                .andExpect(jsonPath("$.matches[0].chunk.source.url")
+                        .value("https://miriammibao.com/guide-to-apply-retinol-and-pigment-test/"));
     }
 
     @Test

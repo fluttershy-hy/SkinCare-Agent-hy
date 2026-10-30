@@ -40,7 +40,8 @@ public final class KnowledgeImporter {
             String expectedHost = switch (entry.publisher()) {
                 case "AAD" -> "www.aad.org";
                 case "NICE" -> "www.nice.org.uk";
-                default -> throw new IllegalArgumentException("只导入人工核实的 AAD/NICE 条目");
+                case "MiriamMibao" -> "miriammibao.com";
+                default -> throw new IllegalArgumentException("只导入已核实来源的条目");
             };
             if (!"https".equals(uri.getScheme()) || !expectedHost.equals(uri.getHost())
                     || uri.getUserInfo() != null || uri.getPort() != -1) {

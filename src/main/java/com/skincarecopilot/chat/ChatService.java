@@ -75,13 +75,14 @@ public class ChatService {
                 return new ChatResponse(INSUFFICIENT, route, List.of());
             }
             var unique = new LinkedHashMap<String, ChatResponse.Source>();
-            var context = new StringBuilder("只依据下列已核实片段回答。不得用其他事实补充。资料不足时明确说不知道；保留研究的不确定性和适用人群。\n");
+            var context = new StringBuilder("只依据下列片段回答。AAD/NICE 是专业资料；MiriamMibao 是温唯的文章观点，必须以‘作者认为’归属，不能提升为医学事实。不同来源冲突时说明差异。资料不足时说不知道；保留适用范围。\n");
             for (var hit : result.matches()) {
                 var chunk = hit.chunk();
                 var source = chunk.source();
                 unique.putIfAbsent(source.id(), new ChatResponse.Source(source.id(), source.publisher(),
                         source.title(), source.section(), source.url(), source.verifiedOn(), source.originalExcerpt()));
-                context.append('[').append(source.id()).append("] ").append(chunk.text()).append('\n');
+                context.append('[').append(source.id()).append(" · ").append(source.publisher())
+                        .append("] ").append(chunk.text()).append('\n');
             }
             sources = List.copyOf(unique.values());
             prompt = context.append("用户问题：").append(message).toString();
@@ -111,7 +112,9 @@ public class ChatService {
 
     interface Assistant {
         @SystemMessage("你是 SkinCare Copilot 信息整理演示助手。不诊断疾病，不开处方，不给药物剂量或保证有效的方案。"
-                + "只要提供了检索片段，必须只根据片段中的事实回答，说明适用范围和不确定性；没有依据就说明资料不足。"
+                + "回答像认真、会讲人话的护肤知识讲解员：先直接回应用户关心的事，再用少量自然段解释理由和不确定之处；不要机械堆砌标题或列表。"
+                + "只要提供了检索片段，必须只根据片段回答，说明适用范围和不确定性；没有依据就说明资料不足。"
+                + "博主文章是作者观点，不等同于临床证据；用‘作者认为’归属，不能把作者判断当作确定的产品功效或个人致敏结论。"
                 + "不要声称饮食能治疗痤疮，不要把泛红推断成过敏或确诊疾病。询问当前用户画像时必须先调用画像查询工具；"
                 + "绝不把聊天推断当作已确认画像。不要生成餐食方案、菜单、具体食材搭配或忌口建议。")
         String chat(@MemoryId ConversationId id, @UserMessage String message);

@@ -76,13 +76,15 @@ public class IngredientService {
         StringBuilder evidence = new StringBuilder();
         for (var hit : hits) {
             var entry = hit.chunk().source();
-            // 小型库目前只允许与成分解读直接有关的两条来源进入提示词。
-            if (!List.of("rosacea-fragrance-free", "contact-dermatitis-irritant-allergic").contains(entry.id())) continue;
+            // 专业资料与博主观点都可检索，但必须在提示词中保留来源层级。
+            if (!List.of("rosacea-fragrance-free", "contact-dermatitis-irritant-allergic").contains(entry.id())
+                    && !"MiriamMibao".equals(entry.publisher())) continue;
             if (entry.id().equals("rosacea-fragrance-free") && !searchQuery.contains("香精")
                     && !searchQuery.contains("敏感")) continue;
-            sources.putIfAbsent(entry.id(), new IngredientResponse.Source(entry.title(), entry.url(),
+            sources.putIfAbsent(entry.id(), new IngredientResponse.Source(entry.publisher(), entry.title(), entry.url(),
                     entry.section(), entry.verifiedOn()));
-            evidence.append("[来源 ").append(entry.id()).append("] ").append(hit.chunk().text()).append('\n');
+            evidence.append("[来源 ").append(entry.id()).append(" · ").append(entry.publisher())
+                    .append("] ").append(hit.chunk().text()).append('\n');
         }
         List<String> limits = List.of("成分表不提供准确浓度、配方工艺或实际使用效果；排序不能证明成分无效。",
                 "成分表及一般刺激资料不能诊断个人过敏；未知名称和别名库外的同义词可能无法匹配。",
@@ -90,7 +92,8 @@ public class IngredientService {
         var readingSuggestions = creatorArticles.related(request.question() + " "
                 + (request.concern() == null ? "" : request.concern()));
         String answer = null;
-        String prompt = "你是谨慎的护肤成分讲解员。仅依据下面结构化输入和检索片段，先直接回答问题，再解释依据、双产品差异及局限。"
+        String prompt = "你是认真、会讲人话的护肤成分讲解员。先用一两句直接回答用户，再自然地解释为什么，最后说仍不知道什么。不要堆砌小标题、机械罗列或说教。"
+                + "仅依据下面结构化输入和检索片段。AAD/NICE 是专业资料；MiriamMibao 是温唯文章观点，必须明确归属为作者观点。"
                 + "绝不推断准确浓度、疗效或个人致敏原因；没有证据就明确不知道。"
                 + "重要事实判断请在句中标明对应来源 ID；来源没有支持的结论不要写。"
                 + "只输出 JSON 对象，字段 answer 为中文自然语言字符串，不要 Markdown 代码围栏。"
