@@ -45,6 +45,21 @@
     </form>
     <div id="product-results" aria-live="polite"></div>
   </section>
+  <section aria-labelledby="ingredient-title">
+    <h2 id="ingredient-title">护肤品成分解读与对比</h2>
+    <p>粘贴完整成分表，按逗号、顿号、分号或换行分隔。已确认过敏成分仅在你明确勾选确认后用于强制匹配；成分表不能诊断过敏或证明实际功效。</p>
+    <label>产品 A 名称 <input id="ingredient-first-name" maxlength="120" placeholder="例如：演示面霜 A"></label>
+    <label>产品 A 成分表 <textarea id="ingredient-first" rows="4" style="width:100%" maxlength="6000" placeholder="例如：水、甘油、香精"></textarea></label>
+    <label>产品 B 名称（可选） <input id="ingredient-second-name" maxlength="120"></label>
+    <label>产品 B 成分表（可选） <textarea id="ingredient-second" rows="4" style="width:100%" maxlength="6000"></textarea></label>
+    <label>本次肤质（留空则读取已保存画像） <input id="ingredient-skin" maxlength="80"></label>
+    <label>关注问题 <input id="ingredient-concern" maxlength="200" placeholder="例如：保湿、泛红"></label>
+    <label>已确认过敏的成分（逗号分隔） <input id="ingredient-allergies" placeholder="例如：香精"></label>
+    <label><input id="ingredient-confirmed" type="checkbox"> 我确认以上是已确认过敏的成分，不是怀疑项</label>
+    <label>想问什么 <input id="ingredient-question" maxlength="500" placeholder="例如：这两款有什么区别？"></label>
+    <button id="ingredient-submit" type="button">分析成分</button>
+    <div id="ingredient-results" aria-live="polite"></div>
+  </section>
   <section>
     <h2>演示用户画像</h2>
     <label>用户 ID <input id="user-id" value="demo-user" maxlength="40"></label>
@@ -63,6 +78,58 @@
     <button id="send" type="submit">发送</button>
   </form>
   <script>
+    document.querySelector('#ingredient-submit').addEventListener('click', async () => {
+      const result = document.querySelector('#ingredient-results');
+      result.replaceChildren();
+      const value = id => document.querySelector(id).value.trim();
+      const secondName = value('#ingredient-second-name');
+      const secondIngredients = value('#ingredient-second');
+      try {
+        const response = await fetch('/api/ingredients/analyze', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({userId: value('#user-id'),
+            first: {name: value('#ingredient-first-name'), ingredients: value('#ingredient-first')},
+            second: secondName || secondIngredients ? {name: secondName, ingredients: secondIngredients} : null,
+            skinType: value('#ingredient-skin'), concern: value('#ingredient-concern'),
+            confirmedIngredientAllergies: value('#ingredient-allergies').split(/[,，、]/).map(x => x.trim()).filter(Boolean),
+            allergiesConfirmed: document.querySelector('#ingredient-confirmed').checked,
+            question: value('#ingredient-question')})
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '分析失败');
+        const answer = document.createElement('p');
+        answer.style.whiteSpace = 'pre-wrap';
+        answer.textContent = data.answer;
+        result.append(answer);
+        for (const alert of data.allergyAlerts) {
+          const line = document.createElement('p');
+          line.className = 'error';
+          line.textContent = `${alert.product} 第 ${alert.position} 项“${alert.matchedIngredient}”命中已确认成分“${alert.confirmedName}”`;
+          result.append(line);
+        }
+        for (const product of data.products) {
+          const details = document.createElement('details');
+          const summary = document.createElement('summary');
+          summary.textContent = `${product.name}：解析了 ${product.ingredients.length} 项成分（保留原顺序）`;
+          const list = document.createElement('ol');
+          for (const ingredient of product.ingredients) {
+            const item = document.createElement('li');
+            item.textContent = `${ingredient.raw} → ${ingredient.normalized}${ingredient.recognized ? '' : '（名称未收录，仅字面标准化）'}`;
+            list.append(item);
+          }
+          details.append(summary, list);
+          result.append(details);
+        }
+        for (const source of data.sources) {
+          const p = document.createElement('p');
+          p.append('依据：', sourceLink({...source, publisher: 'AAD'}), `（核实于 ${source.verifiedOn}）`);
+          result.append(p);
+        }
+        const limits = document.createElement('p');
+        limits.textContent = `局限：${data.limitations.join(' ')}`;
+        result.append(limits);
+      } catch (error) { result.textContent = error.message || '分析失败'; }
+    });
     document.querySelector('#product-form').addEventListener('submit', async event => {
       event.preventDefault();
       const result = document.querySelector('#product-results');
