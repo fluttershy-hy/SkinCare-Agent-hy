@@ -13,11 +13,13 @@ import org.junit.jupiter.api.Test;
 class IngredientServiceTest {
     private final ProfileService profiles = mock(ProfileService.class);
     private final KnowledgeService knowledge = mock(KnowledgeService.class);
-    private final IngredientService service = new IngredientService(profiles, knowledge,
+    private final CreatorArticleService articles = mock(CreatorArticleService.class);
+    private final IngredientService service = new IngredientService(profiles, knowledge, articles,
             new ObjectMapper(), "", "https://example.test", "unused");
 
     IngredientServiceTest() {
         when(profiles.find("demo")).thenReturn(Optional.empty());
+        when(articles.related(anyString())).thenReturn(List.of());
         when(knowledge.search(anyString(), eq(5)))
                 .thenReturn(new KnowledgeService.SearchResult("test", "test", 0.75, List.of()));
     }

@@ -14,7 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/ingredients")
 public class IngredientController {
     private final IngredientService service;
-    public IngredientController(IngredientService service) { this.service = service; }
+    private final CreatorArticleService articles;
+    public IngredientController(IngredientService service, CreatorArticleService articles) {
+        this.service = service;
+        this.articles = articles;
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping("/articles")
+    public java.util.List<CreatorArticleService.Article> articles() { return articles.catalog(); }
 
     @PostMapping("/analyze")
     public IngredientResponse analyze(@RequestBody IngredientRequest request) { return service.analyze(request); }

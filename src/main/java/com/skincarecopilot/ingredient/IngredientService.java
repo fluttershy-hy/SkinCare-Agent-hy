@@ -20,15 +20,18 @@ public class IngredientService {
     private static final Logger log = LoggerFactory.getLogger(IngredientService.class);
     private final ProfileService profiles;
     private final KnowledgeService knowledge;
+    private final CreatorArticleService creatorArticles;
     private final ObjectMapper json;
     private final String apiKey, baseUrl, modelName;
 
-    public IngredientService(ProfileService profiles, KnowledgeService knowledge, ObjectMapper json,
+    public IngredientService(ProfileService profiles, KnowledgeService knowledge,
+            CreatorArticleService creatorArticles, ObjectMapper json,
             @Value("${SKINCARE_LLM_API_KEY:}") String apiKey,
             @Value("${SKINCARE_LLM_BASE_URL:https://api.deepseek.com}") String baseUrl,
             @Value("${SKINCARE_LLM_MODEL:deepseek-flash}") String modelName) {
         this.profiles = profiles;
         this.knowledge = knowledge;
+        this.creatorArticles = creatorArticles;
         this.json = json;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
@@ -84,6 +87,8 @@ public class IngredientService {
         List<String> limits = List.of("成分表不提供准确浓度、配方工艺或实际使用效果；排序不能证明成分无效。",
                 "成分表及一般刺激资料不能诊断个人过敏；未知名称和别名库外的同义词可能无法匹配。",
                 "当前知识库很小；没有对应资料的成分功效应说明资料不足。");
+        var readingSuggestions = creatorArticles.related(request.question() + " "
+                + (request.concern() == null ? "" : request.concern()));
         String answer = null;
         String prompt = "你是谨慎的护肤成分讲解员。仅依据下面结构化输入和检索片段，先直接回答问题，再解释依据、双产品差异及局限。"
                 + "绝不推断准确浓度、疗效或个人致敏原因；没有证据就明确不知道。"
@@ -121,7 +126,7 @@ public class IngredientService {
             answer = warning + "请避免把这款产品视为适合自己，向专业人员核实。\n\n" + answer;
         }
         return new IngredientResponse(answer, List.copyOf(products), List.copyOf(alerts),
-                List.copyOf(sources.values()), limits);
+                List.copyOf(sources.values()), readingSuggestions, limits);
     }
 
     private IngredientResponse.Product parseProduct(IngredientRequest.Product product) {

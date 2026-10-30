@@ -77,6 +77,10 @@ Day 6 后新增独立的只读产品页面查询区，供用户输入**包装上
 
 调用顺序：`IngredientController.analyze` → `IngredientService.analyze` → `IngredientNames.parse` 保留原文与顺序并用小型别名表标准化 → 读取已有画像中的肤质（本次肤质优先）→ Java 对本次明确确认的过敏**成分**进行逐项精确/已知别名匹配 → 复用 `KnowledgeService.search` 检索相关 AAD 片段 → 模型输出 JSON `answer` → Java 校验结构并在命中时强制加警示、返回匹配项和来源。画像现有 `allergens` 是一般过敏原，**不会**被自动解释为已确认过敏成分；本次确认的成分也不会持久写入画像。未勾选确认时拒绝把填写的成分当作过敏史。
 
-当前名称表只有香精/香料/Parfum/Fragrance、烟酰胺/Niacinamide、甘油/丙三醇/Glycerin 的示例映射；其余名称只做字面标准化。相同名称的匹配也不能证明个人对实际产品的反应。已有知识库中仅 [AAD 玫瑰痤疮无香料建议](https://www.aad.org/public/diseases/rosacea/triggers/tips) 与 [AAD 接触性皮炎概述](https://www.aad.org/public/diseases/eczema/types/contact-dermatitis) 可用于相关解释，均已在 `entries.json` 记录标题、原文、链接和 2026-10-24 核实日期。前一条适用范围为玫瑰痤疮护理；后一条区分刺激和过敏。没有针对烟酰胺浓度、甘油实际效果或具体产品功效的已核实资料，回答应明确资料不足。博主文章仅可供学习通俗表达，本模块尚未纳入任何博主文章或抓取数据。
+当前名称表只有香精/香料/Parfum/Fragrance、烟酰胺/Niacinamide、甘油/丙三醇/Glycerin 的示例映射；其余名称只做字面标准化。相同名称的匹配也不能证明个人对实际产品的反应。已有知识库中仅 [AAD 玫瑰痤疮无香料建议](https://www.aad.org/public/diseases/rosacea/triggers/tips) 与 [AAD 接触性皮炎概述](https://www.aad.org/public/diseases/eczema/types/contact-dermatitis) 可用于相关解释，均已在 `entries.json` 记录标题、原文、链接和 2026-10-24 核实日期。前一条适用范围为玫瑰痤疮护理；后一条区分刺激和过敏。没有针对烟酰胺浓度、甘油实际效果或具体产品功效的已核实资料，回答应明确资料不足。博主文章仅作为另一个科普阅读目录，不进入事实检索索引。
 
 这是独立于九天主线的新增功能；没有开始 Day 7 的餐食功能。成分分割依赖用户提供的逗号/顿号/分号/换行分隔文本，不识别图片、括号内复杂复合名称或未知同义词；无法由列表推算准确浓度、配方工艺及实际功效。模型的自然语言结论仍可能有错误，强制匹配和来源链接由 Java 控制。
+
+### 温唯文章目录（科普阅读层）
+
+`knowledge/creator-articles.json` 只收录两篇已打开核对的文章的作者、标题、原文链接、发布日期、查阅日期和文章提出的常见问题；不复制全文或 200 多种所谓致粉刺成分表。`CreatorArticleService` 独立加载并校验目录，`GET /api/ingredients/articles` 可查看，相关问题的分析响应把文章列为 `readingSuggestions`。这不是 AAD/NICE 的事实 RAG 索引，文章内容不会进入模型证据提示词，网页也明确标为“延伸阅读，非事实依据”。来源核对及取舍见 `docs/ingredient-sources.md`。

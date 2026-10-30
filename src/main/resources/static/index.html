@@ -125,6 +125,19 @@
           p.append('依据：', sourceLink({...source, publisher: 'AAD'}), `（核实于 ${source.verifiedOn}）`);
           result.append(p);
         }
+        for (const article of data.readingSuggestions || []) {
+          const p = document.createElement('p');
+          const link = document.createElement('a');
+          const url = new URL(article.url);
+          if (url.protocol !== 'https:' || url.hostname !== 'miriammibao.com') continue;
+          link.href = url.href;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = `${article.author} · ${article.title}`;
+          p.append('延伸阅读（博主科普，不作为事实依据）：', link,
+            `。文章提出的问题：${article.commonQuestion} 查阅于 ${article.reviewedOn}。`);
+          result.append(p);
+        }
         const limits = document.createElement('p');
         limits.textContent = `局限：${data.limitations.join(' ')}`;
         result.append(limits);

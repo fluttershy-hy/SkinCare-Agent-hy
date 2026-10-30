@@ -1,0 +1,24 @@
+[
+  {
+    "id": "miriam-ingredient-myths",
+    "author": "温唯",
+    "title": "10種該害怕與不該害怕的化妝保養品成分,小心別掉入廣告陷阱",
+    "url": "https://miriammibao.com/ingredient/",
+    "publishedOn": "2018-09-30",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "只看成分名称与顺序，能否判断产品实际效果和浓度？",
+    "keywords": ["成分表", "浓度", "排序", "烟酰胺", "功效"],
+    "scope": "仅记录文章提出的常见问题，供延伸阅读；不将文中的配方比例、风险或功效断言当作事实依据。"
+  },
+  {
+    "id": "miriam-comedone-ratings",
+    "author": "温唯",
+    "title": "匡列200多種致粉刺成分,油痘肌請小心這些成分的彩妝保養品(持續更新中)",
+    "url": "https://miriammibao.com/comedones-ingredients-in-skin-care/",
+    "publishedOn": "2020-07-07",
+    "reviewedOn": "2026-10-30",
+    "commonQuestion": "成分网站的致粉刺评分能否直接预测整款产品或个人使用后的反应？",
+    "keywords": ["致粉刺", "致痘", "痘痘", "油肌", "评分"],
+    "scope": "仅记录文章讨论的话题，供延伸阅读；不导入其中的200多种成分风险表或个人致痘断言。"
+  }
+]
