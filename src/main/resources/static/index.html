@@ -130,7 +130,7 @@
       const link = document.createElement('a');
       link.textContent = `${source.publisher} · ${source.title} · ${source.section}`;
       const url = new URL(source.url);
-      if (url.protocol === 'https:' && ['www.aad.org', 'www.nice.org.uk', 'miriammibao.com'].includes(url.hostname)) {
+      if (url.protocol === 'https:' && ['www.aad.org', 'www.nice.org.uk', 'miriammibao.com', 'www.ebi.ac.uk'].includes(url.hostname)) {
         link.href = url.href;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';

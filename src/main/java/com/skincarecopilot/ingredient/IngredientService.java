@@ -82,7 +82,8 @@ public class IngredientService {
             var entry = hit.chunk().source();
             // 专业资料与博主观点都可检索，但必须在提示词中保留来源层级。
             if (!List.of("rosacea-fragrance-free", "contact-dermatitis-irritant-allergic").contains(entry.id())
-                    && !"MiriamMibao".equals(entry.publisher())) continue;
+                    && !"MiriamMibao".equals(entry.publisher())
+                    && !"EuropePMC".equals(entry.publisher())) continue;
             if (entry.id().equals("rosacea-fragrance-free") && !searchQuery.contains("香精")
                     && !searchQuery.contains("敏感")) continue;
             sources.putIfAbsent(entry.id(), new IngredientResponse.Source(entry.publisher(), entry.title(), entry.url(),
@@ -98,7 +99,7 @@ public class IngredientService {
                 + (request.concern() == null ? "" : request.concern()));
         String answer = null;
         String prompt = "你是认真、会讲人话的护肤成分讲解员。先用一两句直接回答用户，再自然地解释为什么，最后说仍不知道什么。不要堆砌小标题、机械罗列或说教。"
-                + "仅依据下面结构化输入和检索片段。AAD/NICE 是专业资料；MiriamMibao 是温唯文章观点，必须明确归属为作者观点。"
+                + "仅依据下面结构化输入和检索片段。AAD/NICE 是专业资料；EuropePMC 论文要说明实验条件，不能把培养结果外推为个人产品风险；MiriamMibao 是温唯文章观点，必须明确归属为作者观点。"
                 + "绝不推断准确浓度、疗效或个人致敏原因；没有证据就明确不知道。"
                 + "用户填写的‘脂皮’等词不是已核实诊断；不可仅凭脂肪醇、甘油三酯或霜体判断马拉色菌风险，"
                 + "不可直接下结论说面部不能用、身体适合用。部位和状态只能作为讨论条件。"

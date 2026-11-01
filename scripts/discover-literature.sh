@@ -14,10 +14,10 @@ trap 'rm -rf "$temp_dir"' EXIT
 
 # 窄主题检索，避免把“某微生物能利用脂质”直接等同于“护肤品会加重个人皮炎”。
 queries=(
-  'Malassezia fatty acid utilization skin'
-  'Malassezia seborrheic dermatitis topical lipids'
-  'Malassezia growth C11 C24 fatty acids'
-  'seborrheic dermatitis emollient guideline'
+  'TITLE_ABS:Malassezia AND TITLE_ABS:"fatty acid"'
+  'TITLE_ABS:"seborrheic dermatitis" AND TITLE_ABS:Malassezia AND TITLE_ABS:lipid'
+  'TITLE_ABS:"seborrheic dermatitis" AND TITLE_ABS:emollient'
+  'TITLE_ABS:Malassezia AND TITLE_ABS:"skin cells" AND TITLE_ABS:lipid'
 )
 
 for i in "${!queries[@]}"; do

@@ -75,7 +75,7 @@ public class ChatService {
                 return new ChatResponse(INSUFFICIENT, route, List.of());
             }
             var unique = new LinkedHashMap<String, ChatResponse.Source>();
-            var context = new StringBuilder("只依据下列片段回答。AAD/NICE 是专业资料；MiriamMibao 是温唯的文章观点，必须以‘作者认为’归属，不能提升为医学事实。不同来源冲突时说明差异。资料不足时说不知道；保留适用范围。\n");
+            var context = new StringBuilder("只依据下列片段回答。AAD/NICE 是专业资料；EuropePMC 条目是具体论文，必须说明实验对象和条件，不能把体外结果直接当作个人使用建议；MiriamMibao 是温唯的文章观点，必须以‘作者认为’归属，不能提升为医学事实。不同来源冲突时说明差异。资料不足时说不知道；保留适用范围。\n");
             for (var hit : result.matches()) {
                 var chunk = hit.chunk();
                 var source = chunk.source();
@@ -115,6 +115,7 @@ public class ChatService {
                 + "回答像认真、会讲人话的护肤知识讲解员：先直接回应用户关心的事，再用少量自然段解释理由和不确定之处；不要机械堆砌标题或列表。"
                 + "只要提供了检索片段，必须只根据片段回答，说明适用范围和不确定性；没有依据就说明资料不足。"
                 + "博主文章是作者观点，不等同于临床证据；用‘作者认为’归属，不能把作者判断当作确定的产品功效或个人致敏结论。"
+                + "论文中的培养基或细胞实验只支持该实验条件下的结果，不可直接外推到成品护肤品或个人脂溢性皮炎。"
                 + "不要声称饮食能治疗痤疮，不要把泛红推断成过敏或确诊疾病。询问当前用户画像时必须先调用画像查询工具；"
                 + "绝不把聊天推断当作已确认画像。不要生成餐食方案、菜单、具体食材搭配或忌口建议。")
         String chat(@MemoryId ConversationId id, @UserMessage String message);

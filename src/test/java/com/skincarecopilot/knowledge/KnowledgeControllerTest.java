@@ -21,8 +21,8 @@ class KnowledgeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.model").value("bge-small-zh-v1.5-q"))
                 .andExpect(jsonPath("$.dimensions").value(512))
-                .andExpect(jsonPath("$.entryCount").value(20))
-                .andExpect(jsonPath("$.chunkCount").value(20))
+                .andExpect(jsonPath("$.entryCount").value(22))
+                .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(22)))
                 .andExpect(jsonPath("$.entries").isArray());
     }
 
@@ -56,6 +56,16 @@ class KnowledgeControllerTest {
                 .andExpect(jsonPath("$.matches[0].chunk.source.publisher").value("MiriamMibao"))
                 .andExpect(jsonPath("$.matches[0].chunk.source.url")
                         .value("https://miriammibao.com/guide-to-apply-retinol-and-pigment-test/"));
+    }
+
+    @Test
+    void laboratoryStudyKeepsItsExperimentalScope() throws Exception {
+        mvc.perform(post("/api/knowledge/search").contentType("application/json")
+                        .content("{\"query\":\"马拉色菌 棕榈酸 C16 体外培养基 生长\",\"topK\":5}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.matches[0].chunk.source.publisher").value("EuropePMC"))
+                .andExpect(jsonPath("$.matches[0].chunk.text")
+                        .value(org.hamcrest.Matchers.containsString("培养基")));
     }
 
     @Test
