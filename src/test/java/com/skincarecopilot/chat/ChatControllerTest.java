@@ -66,4 +66,14 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.sources").isEmpty())
                 .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("官网域名")));
     }
+
+    @Test
+    void productUseQuestionSearchesBeforeAnyPersonalRecommendation() throws Exception {
+        mvc.perform(post("/api/chat").contentType("application/json")
+                        .content("{\"userId\":\"demo-user\",\"sessionId\":\"session-a\",\"message\":\"我可以用适乐肤神经酰胺屏障修护润肤霜吗\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("完整 INCI")))
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("尚未配置可信")));
+    }
 }

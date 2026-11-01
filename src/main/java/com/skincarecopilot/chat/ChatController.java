@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.skincarecopilot.profile.ProfileService;
 import com.skincarecopilot.product.ProductSearchService;
+import com.skincarecopilot.product.ProductQuestionDetector;
 import java.io.IOException;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -65,6 +66,26 @@ public class ChatController {
             } catch (IOException | InterruptedException exception) {
                 if (exception instanceof InterruptedException) Thread.currentThread().interrupt();
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(new ChatResponse("联网搜索暂不可用，请稍后重试。"));
+            }
+        }
+        var namedProduct = ProductQuestionDetector.exactProductName(request.message());
+        if (namedProduct.isPresent()) {
+            try {
+                var result = productSearch.search(namedProduct.get());
+                StringBuilder answer = new StringBuilder("你问的是具体产品“").append(namedProduct.get())
+                        .append("”。我先查它的官网页面，但目前没有核实到该版本的完整 INCI，"
+                                + "所以不能仅凭产品名判断你面部或身体是否适合用。\n")
+                        .append(result.note());
+                for (var page : result.officialPageCandidates()) {
+                    answer.append("\n官网候选：").append(page.title()).append(" ").append(page.url());
+                }
+                answer.append("\n你可以粘贴包装上的完整成分表，并填写使用部位和当前状态；"
+                        + "若正在明显泛红、不适或有反复皮疹，应让皮肤科专业人员评估。 ");
+                return ResponseEntity.ok(new ChatResponse(answer.toString(), ChatRoute.PRODUCT_SEARCH, List.of()));
+            } catch (IOException | InterruptedException exception) {
+                if (exception instanceof InterruptedException) Thread.currentThread().interrupt();
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body(new ChatResponse("产品页面查询暂不可用，请提供包装上的完整成分表。"));
             }
         }
         return ResponseEntity.ok(chatService.replyWithSources(

@@ -86,3 +86,5 @@ Day 6 后新增只读产品页面查询能力。在聊天框上方填写**包装
 `knowledge/creator-articles.json` 收录用户给的成分目录中 14 篇文章的作者、标题、原文链接、发布日期、查阅日期与主题。`knowledge/entries.json` 增加每篇文章的简短观点摘要并进入现有向量检索；不复制全文或成分风险表。回答需要把温唯文章标为作者观点，AAD/NICE 标为专业资料，不把博客观点提升为个人诊断或确定功效。`GET /api/ingredients/articles` 可查看文章目录。来源核对及取舍见 `docs/ingredient-sources.md`。
 
 需求草稿中的候选资料与未核实主张逐项记录在 [产品工作流与资料核查](docs/product-workflow-review.md)。
+
+常见的“我可以用某某面霜吗”等具体产品问句也会先走 `ProductQuestionDetector` 和 `ProductSearchService`，查询官网候选页，再说明当前尚无已核实的完整 INCI；不会把搜索摘要写成产品成分或个人适用结论。该识别只覆盖小型规则集，不能保证识别所有商品名称。产品成分库与可信自动提取接口尚未接入。
