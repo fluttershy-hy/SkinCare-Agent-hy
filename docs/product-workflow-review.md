@@ -10,3 +10,14 @@
 - 文档中列出的 Open Cosmetics MCP、INCI API、Dermalytics、CureSkin、INCILABS 等数据量、价格、许可、接口能力及质量。接入前需核对官方地址、API 文档、许可条款、样例响应与真实产品覆盖。
 
 若要进一步实现自动 INCI 查询与病理风险标签，最有用的补充是：① 一款演示产品包装上的完整名称、销售地区和完整成分表，最好附品牌官网具体产品页；② 拟接入数据源的官方项目/API 文档和许可链接；③ 脂溢性皮炎及马拉色菌相关**原始研究或专业指南**中支持具体成分判断的章节。项目仅使用虚构用户，不需要真实病历。
+
+## Open Cosmetics 源码核对（2026-11-01）
+
+用户提供了 [AndyZhuang/opencosmetics](https://github.com/AndyZhuang/opencosmetics)。核对其 `master` 分支提交 `e3d879c` 的 README、`docs/API.md`、`mcp-server/README.md`、`data/reference_formulas.json` 和 `LICENSE` 后，结论是：
+
+- 它确实提供按中文名/INCI 查**原料**的 `/api/ingredients/search`，MCP 的 `ingredient_query` 也是原料监管查询；另有配方分析与规则接口。这些接口可作为未来的原料名称和来源交叉查询候选。
+- MCP 的五个工具没有“按任意中文商品全名查询官方完整产品 INCI”的工具。仓库有 20 个手工整理的参考配方，其中包括 `CeraVe Moisturizing Cream`，但该 JSON 仅称数据来自公开披露与配方分析，未逐条附官方产品页、销售地区及版本；不能因此把它当作当前适乐肤产品的已核实配方。
+- `LICENSE` 对原创代码采用 MIT，同时明确 DuckDB 汇编数据涉及 EU Annex 的 ODbL 和 BEBD 等上游条款；仓库 README 的“数据 CC-BY 4.0”不能覆盖全部上游许可。没有把该 DuckDB 或参考配方复制进本项目。
+- README 的 65 条规则面向配方师的法规、成本、pH 等审查，并非已验证的脂溢性皮炎个人适用性模型。因此尚未把返回的 `PASS/REJECT` 映射为“用户可以用/不能用”。
+
+下一步若要自动查产品完整 INCI，仍需要**能按具体商品版本返回成分表且允许程序调用的产品级来源**，或先提供一款演示商品的品牌官网成分页。Open Cosmetics 可另作原料级查询候选，但不代替产品级来源。
