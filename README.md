@@ -88,3 +88,7 @@ Day 6 后新增只读产品页面查询能力。在聊天框上方填写**包装
 需求草稿中的候选资料与未核实主张逐项记录在 [产品工作流与资料核查](docs/product-workflow-review.md)。
 
 常见的“我可以用某某面霜吗”等具体产品问句也会先走 `ProductQuestionDetector` 和 `ProductSearchService`，查询官网候选页，再说明当前尚无已核实的完整 INCI；不会把搜索摘要写成产品成分或个人适用结论。该识别只覆盖小型规则集，不能保证识别所有商品名称。产品成分库与可信自动提取接口尚未接入。
+
+## 马拉色菌文献发现工具
+
+`bash scripts/discover-literature.sh /tmp/skincare-literature-candidates.json` 批量检索 Europe PMC，并保存去重的文献元数据供人工审读。它不抓取全文、不生成个人风险评分，候选文献也不会自动进入 RAG。证据核查流程和当前访问状态见 [文献发现记录](docs/malassezia-literature.md)。
