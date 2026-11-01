@@ -45,4 +45,15 @@ class IngredientServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.analyze(request));
         verify(knowledge, never()).search(anyString(), anyInt());
     }
+
+    @Test
+    void acceptsStructuredContextButRejectsInventedStates() {
+        var valid = new IngredientRequest("demo", new IngredientRequest.Product("A", "水、甘油"),
+                null, "油性", "保湿", List.of(), false, "可以用吗？", "面部", "稳定", true);
+        var response = service.analyze(valid);
+        assertTrue(response.answer().contains("资料不足"));
+        var invalid = new IngredientRequest("demo", valid.first(), null, "油性", "保湿",
+                List.of(), false, "可以用吗？", "T区一定不能用", "稳定", true);
+        assertThrows(IllegalArgumentException.class, () -> service.analyze(invalid));
+    }
 }

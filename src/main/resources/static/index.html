@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SkinCare Copilot · Day 4</title>
+  <title>SkinCare Copilot</title>
   <style>
     body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #263238; }
     #messages { min-height: 280px; border: 1px solid #ddd; padding: 1rem; border-radius: 8px; }
@@ -39,15 +39,6 @@
     </form>
     <div id="knowledge-results" aria-live="polite"></div>
   </section>
-  <section aria-labelledby="product-title">
-    <h2 id="product-title">具体产品的官方页面查询</h2>
-    <p>输入完整产品名；品牌名不足以确定配方。搜索摘要仅用于定位官网页面，不能诊断致敏成分。若官网未列完整成分表，请勿据此判断。</p>
-    <form id="product-form">
-      <input id="product-name" aria-label="具体产品全名" maxlength="120" required placeholder="输入包装上的完整产品名">
-      <button id="product-search" type="submit">查找官网页面</button>
-    </form>
-    <div id="product-results" aria-live="polite"></div>
-  </section>
   <section>
     <h2>演示用户画像</h2>
     <label>用户 ID <input id="user-id" value="demo-user" maxlength="40"></label>
@@ -65,12 +56,16 @@
     <details>
       <summary>这次要分析成分表？在这里粘贴（可选）</summary>
       <p>同一个聊天窗口回答。成分按逗号、顿号、分号或换行分隔；已确认过敏成分需明确勾选。</p>
-      <label>产品名称 <input id="ingredient-first-name" maxlength="120" placeholder="例如：演示面霜 A"></label>
+      <label>产品具体全名 <input id="ingredient-first-name" maxlength="120" placeholder="例如：包装上的完整名称"></label>
+      <p>未粘贴成分表时，只查找官网候选页面；搜索摘要不等于完整 INCI，不能据此判断适用性。</p>
       <label>完整成分表 <textarea id="ingredient-first" rows="4" style="width:100%" maxlength="6000"></textarea></label>
       <label>第二款名称（可选） <input id="ingredient-second-name" maxlength="120"></label>
       <label>第二款成分表（可选） <textarea id="ingredient-second" rows="4" style="width:100%" maxlength="6000"></textarea></label>
       <label>本次肤质（留空读取画像） <input id="ingredient-skin" maxlength="80"></label>
       <label>关注问题 <input id="ingredient-concern" maxlength="200"></label>
+      <label>使用部位 <select id="ingredient-area"><option value="未说明">未说明</option><option>面部</option><option>身体</option><option>其他</option></select></label>
+      <label>当前状态 <select id="ingredient-state"><option value="不确定">不确定</option><option>稳定</option><option>正在泛红或不适</option></select></label>
+      <label>自述敏感 <select id="ingredient-sensitive"><option value="">不确定</option><option value="yes">是</option><option value="no">否</option></select></label>
       <label>已确认过敏成分（逗号分隔） <input id="ingredient-allergies"></label>
       <label><input id="ingredient-confirmed" type="checkbox"> 我确认这些成分是已确认过敏，不是怀疑项</label>
     </details>
@@ -88,6 +83,9 @@
           first: {name: value('#ingredient-first-name'), ingredients: value('#ingredient-first')},
           second: secondName || secondIngredients ? {name: secondName, ingredients: secondIngredients} : null,
           skinType: value('#ingredient-skin'), concern: value('#ingredient-concern'),
+          bodyArea: value('#ingredient-area'), currentState: value('#ingredient-state'),
+          sensitive: value('#ingredient-sensitive') === 'yes' ? true :
+            value('#ingredient-sensitive') === 'no' ? false : null,
           confirmedIngredientAllergies: value('#ingredient-allergies').split(/[,，、]/).map(x => x.trim()).filter(Boolean),
           allergiesConfirmed: document.querySelector('#ingredient-confirmed').checked,
           question: message})
@@ -105,36 +103,26 @@
         messages.append(list);
       }
     }
-    document.querySelector('#product-form').addEventListener('submit', async event => {
-      event.preventDefault();
-      const result = document.querySelector('#product-results');
-      result.replaceChildren();
-      try {
-        const response = await fetch('/api/products/search', {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({productName: document.querySelector('#product-name').value.trim()})
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || '搜索失败');
-        const note = document.createElement('p');
-        note.textContent = data.note;
-        result.append(note);
-        for (const page of data.officialPageCandidates) {
-          const item = document.createElement('p');
-          const link = document.createElement('a');
-          const url = new URL(page.url);
-          if (url.protocol !== 'https:') continue;
-          link.href = url.href;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.textContent = page.title;
-          item.append(link, document.createTextNode(`：${page.searchSnippet}`));
-          result.append(item);
-        }
-      } catch (error) {
-        result.textContent = error.message || '搜索失败。';
+    async function findProductPage() {
+      const name = document.querySelector('#ingredient-first-name').value.trim();
+      const response = await fetch('/api/products/search', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({productName: name})
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || '产品页面查询失败');
+      append('助手', data.note + ' 请粘贴包装上的完整成分表，我才能按你的部位和状态解读。');
+      for (const page of data.officialPageCandidates || []) {
+        const url = new URL(page.url);
+        if (url.protocol !== 'https:') continue;
+        const p = document.createElement('p');
+        const link = document.createElement('a');
+        link.href = url.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+        link.textContent = page.title;
+        p.append('官网候选：', link);
+        messages.append(p);
       }
-    });
+    }
     const knowledgeStatus = document.querySelector('#knowledge-status');
     const knowledgeResults = document.querySelector('#knowledge-results');
     const knowledgeSearch = document.querySelector('#knowledge-search');
@@ -265,6 +253,10 @@
       try {
         if (document.querySelector('#ingredient-first').value.trim()) {
           await analyzeIngredients(message);
+          return;
+        }
+        if (document.querySelector('#ingredient-first-name').value.trim()) {
+          await findProductPage();
           return;
         }
         const response = await fetch('/api/chat', {

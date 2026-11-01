@@ -46,6 +46,10 @@ public class IngredientService {
             throw new IllegalArgumentException("问题需为 1～500 字符");
         if (request.concern() != null && request.concern().length() > 200)
             throw new IllegalArgumentException("关注问题不能超过 200 字符");
+        if (request.bodyArea() != null && !List.of("面部", "身体", "其他", "未说明").contains(request.bodyArea()))
+            throw new IllegalArgumentException("使用部位必须从预设选项中选择");
+        if (request.currentState() != null && !List.of("稳定", "正在泛红或不适", "不确定").contains(request.currentState()))
+            throw new IllegalArgumentException("当前状态必须从预设选项中选择");
         var products = new ArrayList<IngredientResponse.Product>();
         products.add(parseProduct(request.first()));
         if (request.second() != null) products.add(parseProduct(request.second()));
@@ -88,6 +92,7 @@ public class IngredientService {
         }
         List<String> limits = List.of("成分表不提供准确浓度、配方工艺或实际使用效果；排序不能证明成分无效。",
                 "成分表及一般刺激资料不能诊断个人过敏；未知名称和别名库外的同义词可能无法匹配。",
+                "肤质、部位与状态是用户描述，不等同于医学诊断；没有对应资料时不判断面部或身体一定适用。",
                 "当前知识库很小；没有对应资料的成分功效应说明资料不足。");
         var readingSuggestions = creatorArticles.related(request.question() + " "
                 + (request.concern() == null ? "" : request.concern()));
@@ -95,10 +100,14 @@ public class IngredientService {
         String prompt = "你是认真、会讲人话的护肤成分讲解员。先用一两句直接回答用户，再自然地解释为什么，最后说仍不知道什么。不要堆砌小标题、机械罗列或说教。"
                 + "仅依据下面结构化输入和检索片段。AAD/NICE 是专业资料；MiriamMibao 是温唯文章观点，必须明确归属为作者观点。"
                 + "绝不推断准确浓度、疗效或个人致敏原因；没有证据就明确不知道。"
+                + "用户填写的‘脂皮’等词不是已核实诊断；不可仅凭脂肪醇、甘油三酯或霜体判断马拉色菌风险，"
+                + "不可直接下结论说面部不能用、身体适合用。部位和状态只能作为讨论条件。"
                 + "重要事实判断请在句中标明对应来源 ID；来源没有支持的结论不要写。"
                 + "只输出 JSON 对象，字段 answer 为中文自然语言字符串，不要 Markdown 代码围栏。"
                 + "不可自行增删过敏提示，Java 会另行显示。\n问题：" + request.question()
                 + "\n肤质（用户输入优先，否则已确认画像）：" + skinType
+                + "\n使用部位：" + request.bodyArea() + "；当前状态：" + request.currentState()
+                + "；自述敏感：" + request.sensitive()
                 + "\n关注问题：" + request.concern() + "\n产品成分与顺序：" + write(products)
                 + "\n已确认过敏成分命中：" + write(alerts) + "\n证据片段：" + evidence
                 + "\n固定局限：" + write(limits);
