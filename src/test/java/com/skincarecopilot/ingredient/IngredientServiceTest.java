@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skincarecopilot.knowledge.KnowledgeService;
 import com.skincarecopilot.profile.ProfileService;
+import com.skincarecopilot.product.ProductIngredientStore;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,9 @@ class IngredientServiceTest {
     private final ProfileService profiles = mock(ProfileService.class);
     private final KnowledgeService knowledge = mock(KnowledgeService.class);
     private final CreatorArticleService articles = mock(CreatorArticleService.class);
-    private final IngredientService service = new IngredientService(profiles, knowledge, articles,
+    private final ProductIngredientStore products = mock(ProductIngredientStore.class);
+    private final IngredientEvidenceService evidence = new IngredientEvidenceService();
+    private final IngredientService service = new IngredientService(profiles, knowledge, articles, products, evidence,
             new ObjectMapper(), "", "https://example.test", "unused");
 
     IngredientServiceTest() {
@@ -35,7 +38,7 @@ class IngredientServiceTest {
         assertEquals(2, response.allergyAlerts().get(0).position());
         assertTrue(response.answer().startsWith("已确认过敏成分命中"));
         assertEquals(2, response.products().size());
-        assertTrue(response.answer().contains("资料不足"));
+        assertTrue(response.answer().contains("不能把它当作经过校验的可用选择"));
     }
 
     @Test
@@ -55,5 +58,16 @@ class IngredientServiceTest {
         var invalid = new IngredientRequest("demo", valid.first(), null, "油性", "保湿",
                 List.of(), false, "可以用吗？", "T区一定不能用", "稳定", true);
         assertThrows(IllegalArgumentException.class, () -> service.analyze(invalid));
+    }
+
+    @Test
+    void savesOnlyExplicitlyConfirmedCompleteProductList() {
+        var product = new IngredientRequest.Product("虚构面霜", "水、甘油");
+        service.analyze(new IngredientRequest("demo", product, null, null, null,
+                List.of(), false, "保湿吗？"));
+        verify(products, never()).saveUserConfirmed(anyString(), anyString(), anyString());
+        service.analyze(new IngredientRequest("demo", product, null, null, null,
+                List.of(), false, "保湿吗？", "面部", "稳定", null, true));
+        verify(products).saveUserConfirmed("demo", "虚构面霜", "水、甘油");
     }
 }

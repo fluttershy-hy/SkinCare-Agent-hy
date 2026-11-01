@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import com.skincarecopilot.product.ProductIngredientStore;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -15,6 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ChatControllerTest {
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private ProductIngredientStore savedProducts;
 
     @Test
     void rejectsBlankMessageBeforeCallingModel() throws Exception {
@@ -75,5 +78,22 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
                 .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("完整 INCI")))
                 .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("尚未配置可信")));
+    }
+
+    @Test
+    void confirmedLocalProductIsReadBeforeSearchAndAllergyIsEnforced() throws Exception {
+        savedProducts.saveUserConfirmed("demo-saved", "虚构保湿面霜", "水、Parfum、甘油");
+        mvc.perform(post("/api/chat").contentType("application/json")
+                        .content("{\"userId\":\"demo-saved\",\"sessionId\":\"session-a\","
+                                + "\"message\":\"我可以用虚构保湿面霜吗\",\"productName\":\"虚构保湿面霜\","
+                                + "\"confirmedIngredientAllergies\":[\"香精\"],\"allergiesConfirmed\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("Parfum")))
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("保存的包装成分表")));
+        mvc.perform(post("/api/chat").contentType("application/json")
+                        .content("{\"userId\":\"another-user\",\"sessionId\":\"session-a\","
+                                + "\"message\":\"我可以用虚构保湿面霜吗\",\"productName\":\"虚构保湿面霜\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("本地没有")));
     }
 }

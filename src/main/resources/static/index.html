@@ -59,6 +59,7 @@
       <label>产品具体全名 <input id="ingredient-first-name" maxlength="120" placeholder="例如：包装上的完整名称"></label>
       <p>未粘贴成分表时，只查找官网候选页面；搜索摘要不等于完整 INCI，不能据此判断适用性。</p>
       <label>完整成分表 <textarea id="ingredient-first" rows="4" style="width:100%" maxlength="6000"></textarea></label>
+      <label><input id="ingredient-complete" type="checkbox"> 我确认这是该具体版本包装上的完整成分表，保存供本虚构用户之后查询</label>
       <label>第二款名称（可选） <input id="ingredient-second-name" maxlength="120"></label>
       <label>第二款成分表（可选） <textarea id="ingredient-second" rows="4" style="width:100%" maxlength="6000"></textarea></label>
       <label>本次肤质（留空读取画像） <input id="ingredient-skin" maxlength="80"></label>
@@ -88,11 +89,33 @@
             value('#ingredient-sensitive') === 'no' ? false : null,
           confirmedIngredientAllergies: value('#ingredient-allergies').split(/[,，、]/).map(x => x.trim()).filter(Boolean),
           allergiesConfirmed: document.querySelector('#ingredient-confirmed').checked,
+          productIngredientsConfirmed: document.querySelector('#ingredient-complete').checked,
           question: message})
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '成分分析失败');
       append('助手', data.answer);
+      if (data.assessment) {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = `核对记录：${data.assessment.decision === 'AVOID_CONFIRMED_MATCH' ? '已确认过敏成分命中' : '个人适用性未知'}`;
+        const note = document.createElement('p');
+        note.textContent = `${data.assessment.reason} 法规状态：${data.assessment.regulatoryStatus}`;
+        details.append(summary, note);
+        for (const signal of data.assessment.signals) {
+          const line = document.createElement('p');
+          line.textContent = `${signal.product} · ${signal.ingredient}：${signal.observation} ${signal.limitation} `;
+          const source = new URL(signal.sourceUrl);
+          if (source.protocol === 'https:' && ['www.aad.org', 'www.ebi.ac.uk'].includes(source.hostname)) {
+            const link = document.createElement('a');
+            link.href = source.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+            link.textContent = '查看依据';
+            line.append(link);
+          }
+          details.append(line);
+        }
+        messages.append(details);
+      }
       if (data.sources?.length) {
         const list = document.createElement('ul');
         for (const source of data.sources) {
@@ -101,26 +124,6 @@
           list.append(item);
         }
         messages.append(list);
-      }
-    }
-    async function findProductPage() {
-      const name = document.querySelector('#ingredient-first-name').value.trim();
-      const response = await fetch('/api/products/search', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({productName: name})
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '产品页面查询失败');
-      append('助手', data.note + ' 请粘贴包装上的完整成分表，我才能按你的部位和状态解读。');
-      for (const page of data.officialPageCandidates || []) {
-        const url = new URL(page.url);
-        if (url.protocol !== 'https:') continue;
-        const p = document.createElement('p');
-        const link = document.createElement('a');
-        link.href = url.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
-        link.textContent = page.title;
-        p.append('官网候选：', link);
-        messages.append(p);
       }
     }
     const knowledgeStatus = document.querySelector('#knowledge-status');
@@ -255,13 +258,18 @@
           await analyzeIngredients(message);
           return;
         }
-        if (document.querySelector('#ingredient-first-name').value.trim()) {
-          await findProductPage();
-          return;
-        }
         const response = await fetch('/api/chat', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({userId: userId.value.trim(), sessionId, message})
+          body: JSON.stringify({userId: userId.value.trim(), sessionId, message,
+            productName: document.querySelector('#ingredient-first-name').value.trim() || null,
+            bodyArea: document.querySelector('#ingredient-area').value,
+            currentState: document.querySelector('#ingredient-state').value,
+            sensitive: document.querySelector('#ingredient-sensitive').value === 'yes' ? true :
+              document.querySelector('#ingredient-sensitive').value === 'no' ? false : null,
+            concern: document.querySelector('#ingredient-concern').value.trim(),
+            confirmedIngredientAllergies: document.querySelector('#ingredient-allergies').value
+              .split(/[,，、]/).map(x => x.trim()).filter(Boolean),
+            allergiesConfirmed: document.querySelector('#ingredient-confirmed').checked})
         });
         const data = await response.json();
         append(response.ok ? '助手' : '错误', data.answer, response.ok ? '' : 'error');

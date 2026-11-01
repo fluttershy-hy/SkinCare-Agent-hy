@@ -12,7 +12,19 @@ final class IngredientNames {
             Map.entry("PARFUM", "FRAGRANCE"), Map.entry("FRAGRANCE", "FRAGRANCE"),
             Map.entry("烟酰胺", "NIACINAMIDE"), Map.entry("NIACINAMIDE", "NIACINAMIDE"),
             Map.entry("甘油", "GLYCERIN"), Map.entry("丙三醇", "GLYCERIN"),
-            Map.entry("GLYCERIN", "GLYCERIN"));
+            Map.entry("GLYCERIN", "GLYCERIN"),
+            Map.entry("棕榈酸", "PALMITIC ACID"), Map.entry("PALMITIC ACID", "PALMITIC ACID"),
+            Map.entry("鲸蜡硬脂醇", "CETEARYL ALCOHOL"), Map.entry("CETEARYL ALCOHOL", "CETEARYL ALCOHOL"),
+            Map.entry("辛酸/癸酸甘油三酯", "CAPRYLIC/CAPRIC TRIGLYCERIDE"),
+            Map.entry("CAPRYLIC/CAPRIC TRIGLYCERIDE", "CAPRYLIC/CAPRIC TRIGLYCERIDE"),
+            Map.entry("神经酰胺 NP", "CERAMIDE NP"), Map.entry("CERAMIDE NP", "CERAMIDE NP"),
+            Map.entry("神经酰胺 AP", "CERAMIDE AP"), Map.entry("CERAMIDE AP", "CERAMIDE AP"),
+            Map.entry("神经酰胺 EOP", "CERAMIDE EOP"), Map.entry("CERAMIDE EOP", "CERAMIDE EOP"),
+            Map.entry("透明质酸钠", "SODIUM HYALURONATE"),
+            Map.entry("SODIUM HYALURONATE", "SODIUM HYALURONATE"),
+            Map.entry("凡士林", "PETROLATUM"), Map.entry("PETROLATUM", "PETROLATUM"),
+            Map.entry("甲基异噻唑啉酮", "METHYLISOTHIAZOLINONE"),
+            Map.entry("METHYLISOTHIAZOLINONE", "METHYLISOTHIAZOLINONE"));
     static final Set<String> KNOWN = Set.copyOf(ALIASES.values());
 
     static String key(String text) {

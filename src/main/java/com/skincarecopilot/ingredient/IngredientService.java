@@ -3,6 +3,7 @@ package com.skincarecopilot.ingredient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skincarecopilot.knowledge.KnowledgeService;
 import com.skincarecopilot.profile.ProfileService;
+import com.skincarecopilot.product.ProductIngredientStore;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.UserMessage;
@@ -21,17 +22,22 @@ public class IngredientService {
     private final ProfileService profiles;
     private final KnowledgeService knowledge;
     private final CreatorArticleService creatorArticles;
+    private final ProductIngredientStore productStore;
+    private final IngredientEvidenceService evidenceService;
     private final ObjectMapper json;
     private final String apiKey, baseUrl, modelName;
 
     public IngredientService(ProfileService profiles, KnowledgeService knowledge,
-            CreatorArticleService creatorArticles, ObjectMapper json,
+            CreatorArticleService creatorArticles, ProductIngredientStore productStore,
+            IngredientEvidenceService evidenceService, ObjectMapper json,
             @Value("${SKINCARE_LLM_API_KEY:}") String apiKey,
             @Value("${SKINCARE_LLM_BASE_URL:https://api.deepseek.com}") String baseUrl,
             @Value("${SKINCARE_LLM_MODEL:deepseek-flash}") String modelName) {
         this.profiles = profiles;
         this.knowledge = knowledge;
         this.creatorArticles = creatorArticles;
+        this.productStore = productStore;
+        this.evidenceService = evidenceService;
         this.json = json;
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
@@ -63,6 +69,11 @@ public class IngredientService {
             throw new IllegalArgumentException("请明确确认所填的是已确认过敏成分；怀疑项不能用于强制匹配");
         if (confirmed.size() > 20 || confirmed.stream().anyMatch(s -> s == null || s.isBlank() || s.length() > 80))
             throw new IllegalArgumentException("已确认过敏成分最多 20 项，每项 1～80 字符");
+        if (request.productIngredientsConfirmed()) {
+            productStore.saveUserConfirmed(request.userId(), request.first().name(), request.first().ingredients());
+            if (request.second() != null) productStore.saveUserConfirmed(request.userId(),
+                    request.second().name(), request.second().ingredients());
+        }
         // 强制匹配在模型调用之前完成，使用小型别名表；未知名称仅允许字面完全一致。
         var alerts = new ArrayList<IngredientResponse.Alert>();
         for (var product : products) for (var ingredient : product.ingredients()) for (String allergen : confirmed) {
@@ -70,6 +81,7 @@ public class IngredientService {
                 alerts.add(new IngredientResponse.Alert(product.name(), allergen,
                         ingredient.raw(), ingredient.position()));
         }
+        var assessment = evidenceService.assess(products, alerts);
 
         // RAG 只供模型解释资料；命中片段和来源由 Java 选取，不接受模型自造引用。
         String searchQuery = request.question() + " " + (request.concern() == null ? "" : request.concern());
@@ -110,9 +122,11 @@ public class IngredientService {
                 + "\n使用部位：" + request.bodyArea() + "；当前状态：" + request.currentState()
                 + "；自述敏感：" + request.sensitive()
                 + "\n关注问题：" + request.concern() + "\n产品成分与顺序：" + write(products)
-                + "\n已确认过敏成分命中：" + write(alerts) + "\n证据片段：" + evidence
+                + "\n已确认过敏成分命中：" + write(alerts)
+                + "\nJava 分层判断（UNKNOWN 表示不能判定个人适用）：" + write(assessment)
+                + "\n证据片段：" + evidence
                 + "\n固定局限：" + write(limits);
-        if (!apiKey.isBlank() && !sources.isEmpty()) {
+        if (!apiKey.isBlank() && !sources.isEmpty() && alerts.isEmpty()) {
             try {
                 var model = OpenAiChatModel.builder().apiKey(apiKey).baseUrl(baseUrl).modelName(modelName).build();
                 String raw = AiServices.create(Analyzer.class, model).answer(prompt).strip();
@@ -123,6 +137,12 @@ public class IngredientService {
             } catch (Exception e) {
                 log.warn("ingredient model analysis failed: {}", e.getClass().getSimpleName());
             }
+        }
+        if (answer == null && !alerts.isEmpty()) {
+            answer = "这款产品的成分表与本次已确认过敏成分发生名称匹配，"
+                    + "因此不能把它当作经过校验的可用选择。即使另一款没有命中，"
+                    + "也不代表它对你一定安全；仅凭成分表无法确定个人反应、"
+                    + "保湿效果或面部与身体的适用性。";
         }
         if (answer == null) {
             answer = (sources.isEmpty() ? "当前已核实资料不足" : "当前模型不可用")
@@ -138,8 +158,13 @@ public class IngredientService {
                     .append(a.confirmedName()).append("）；");
             answer = warning + "请避免把这款产品视为适合自己，向专业人员核实。\n\n" + answer;
         }
+        String finalAnswer = answer;
+        // 只展示模型实际引用的命中来源，避免无关检索结果冒充回答依据。
+        var citedSources = sources.entrySet().stream()
+                .filter(entry -> finalAnswer.contains(entry.getKey()))
+                .map(Map.Entry::getValue).toList();
         return new IngredientResponse(answer, List.copyOf(products), List.copyOf(alerts),
-                List.copyOf(sources.values()), readingSuggestions, limits);
+                citedSources, readingSuggestions, limits, assessment);
     }
 
     private IngredientResponse.Product parseProduct(IngredientRequest.Product product) {
