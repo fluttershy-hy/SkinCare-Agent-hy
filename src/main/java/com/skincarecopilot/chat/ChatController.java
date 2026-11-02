@@ -11,6 +11,7 @@ import com.skincarecopilot.profile.ProfileService;
 import com.skincarecopilot.product.ProductSearchService;
 import com.skincarecopilot.product.ProductQuestionDetector;
 import com.skincarecopilot.product.ProductIngredientStore;
+import com.skincarecopilot.product.OfficialIngredientService;
 import com.skincarecopilot.ingredient.IngredientRequest;
 import com.skincarecopilot.ingredient.IngredientService;
 import com.skincarecopilot.meal.MealPlanService;
@@ -27,17 +28,19 @@ public class ChatController {
     private final ProductIngredientStore savedProducts;
     private final IngredientService ingredients;
     private final MealPlanService meals;
+    private final OfficialIngredientService officialIngredients;
     private static final Pattern POSSIBLE_PRODUCT_REACTION = Pattern.compile(
             "(?:可能|怀疑).{0,12}对(.{2,80}?)(?:过敏|不耐受|有反应)");
 
     public ChatController(ChatService chatService, ProductSearchService productSearch,
                           ProductIngredientStore savedProducts, IngredientService ingredients,
-                          MealPlanService meals) {
+                          MealPlanService meals, OfficialIngredientService officialIngredients) {
         this.chatService = chatService;
         this.productSearch = productSearch;
         this.savedProducts = savedProducts;
         this.ingredients = ingredients;
         this.meals = meals;
+        this.officialIngredients = officialIngredients;
     }
 
     @PostMapping
@@ -101,6 +104,37 @@ public class ChatController {
         }
         try {
             var result = productSearch.search(productName);
+            if (request.productMarket() != null && !request.productMarket().isBlank()
+                    && request.productVersion() != null && !request.productVersion().isBlank()) {
+                var identity = new OfficialIngredientService.Identity(productName,
+                        request.productMarket(), request.productVersion());
+                for (var page : result.officialPageCandidates()) {
+                    try {
+                        var extracted = officialIngredients.extract(identity, page.url());
+                        if (extracted.isEmpty()) continue;
+                        var official = extracted.get();
+                        var analysis = ingredients.analyze(new IngredientRequest(request.userId(),
+                                new IngredientRequest.Product(official.productName(),
+                                        String.join("、", official.ingredients())), null,
+                                null, request.concern(), request.confirmedIngredientAllergies(),
+                                request.allergiesConfirmed(), request.message(), request.bodyArea(),
+                                request.currentState(), request.sensitive()));
+                        var sources = new java.util.ArrayList<ChatResponse.Source>();
+                        sources.add(new ChatResponse.Source("official-product-page", "品牌官网", productName,
+                                request.productMarket() + " · " + request.productVersion(), official.sourceUrl(),
+                                official.checkedOn(), "页面明确标注的全成分区域"));
+                        analysis.sources().forEach(s -> sources.add(new ChatResponse.Source(s.url(), s.publisher(),
+                                s.title(), s.section(), s.url(), s.verifiedOn(), "")));
+                        return ResponseEntity.ok(new ChatResponse("从已配置品牌官网提取的候选全成分（"
+                                + official.market() + " / " + official.version() + "，页面查阅于 "
+                                + official.checkedOn() + "）：" + String.join("、", official.ingredients())
+                                + "\n请与手中包装核对版本和批次。\n\n" + analysis.answer(),
+                                ChatRoute.PRODUCT_SEARCH, List.copyOf(sources)));
+                    } catch (IOException | IllegalArgumentException ignored) {
+                        // 单个页面不满足完整性条件或暂不可访问，继续检查其他官网候选。
+                    }
+                }
+            }
             StringBuilder answer = new StringBuilder("你问的是具体产品“").append(productName)
                     .append("”。本地没有这款产品的已确认成分表；我先查官网候选页。\n")
                     .append(result.note());

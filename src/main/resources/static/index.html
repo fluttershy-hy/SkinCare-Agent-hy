@@ -57,6 +57,11 @@
       <summary>这次要分析成分表？在这里粘贴（可选）</summary>
       <p>同一个聊天窗口回答。成分按逗号、顿号、分号或换行分隔；已确认过敏成分需明确勾选。</p>
       <label>产品具体全名 <input id="ingredient-first-name" maxlength="120" placeholder="例如：包装上的完整名称"></label>
+      <label>销售市场 <input id="product-market" maxlength="50" placeholder="例如：中国大陆；需与官网页面一致"></label>
+      <label>包装版本标识 <input id="product-version" maxlength="80" placeholder="例如：页面明示的版本或型号"></label>
+      <label>品牌官网具体产品 URL <input id="official-url" type="url" placeholder="https://已配置的品牌官网/具体产品"></label>
+      <button id="extract-official" type="button">核对并提取官网全成分</button>
+      <p id="official-status" aria-live="polite"></p>
       <p>未粘贴成分表时，只查找官网候选页面；搜索摘要不等于完整 INCI，不能据此判断适用性。</p>
       <label>完整成分表 <textarea id="ingredient-first" rows="4" style="width:100%" maxlength="6000"></textarea></label>
       <label><input id="ingredient-complete" type="checkbox"> 我确认这是该具体版本包装上的完整成分表，保存供本虚构用户之后查询</label>
@@ -76,6 +81,27 @@
     <button id="send" type="submit">发送</button>
   </form>
   <script>
+    document.querySelector('#extract-official').addEventListener('click', async () => {
+      const value = id => document.querySelector(id).value.trim();
+      const status = document.querySelector('#official-status');
+      status.replaceChildren();
+      try {
+        const response = await fetch('/api/products/official-ingredients', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({productName: value('#ingredient-first-name'),
+            market: value('#product-market'), version: value('#product-version'), url: value('#official-url')})
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '官网全成分提取失败');
+        document.querySelector('#ingredient-first').value = data.ingredients.join('、');
+        document.querySelector('#ingredient-complete').checked = false;
+        status.append(document.createTextNode(`已从官网页面提取 ${data.ingredients.length} 项；请核对包装版本与批次。来源：`));
+        const link = document.createElement('a');
+        link.href = data.sourceUrl; link.textContent = data.sourceUrl;
+        link.target = '_blank'; link.rel = 'noopener noreferrer';
+        status.append(link);
+      } catch (error) { status.textContent = error.message || '官网全成分提取失败'; }
+    });
     async function showSavedProducts() {
       const container = document.querySelector('#saved-products');
       container.replaceChildren();
@@ -174,6 +200,11 @@
       link.textContent = `${source.publisher} · ${source.title} · ${source.section}`;
       const url = new URL(source.url);
       if (url.protocol === 'https:' && ['www.aad.org', 'www.nice.org.uk', 'miriammibao.com', 'www.ebi.ac.uk'].includes(url.hostname)) {
+        link.href = url.href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+      }
+      if (url.protocol === 'https:' && source.publisher === '品牌官网') {
         link.href = url.href;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
@@ -302,6 +333,8 @@
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({userId: userId.value.trim(), sessionId, message,
             productName: document.querySelector('#ingredient-first-name').value.trim() || null,
+            productMarket: document.querySelector('#product-market').value.trim() || null,
+            productVersion: document.querySelector('#product-version').value.trim() || null,
             bodyArea: document.querySelector('#ingredient-area').value,
             currentState: document.querySelector('#ingredient-state').value,
             sensitive: document.querySelector('#ingredient-sensitive').value === 'yes' ? true :
