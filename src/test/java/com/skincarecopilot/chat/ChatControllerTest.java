@@ -36,11 +36,12 @@ class ChatControllerTest {
     }
 
     @Test
-    void refusesUnvalidatedMealPlanBeforeCallingModel() throws Exception {
+    void requiresConfirmedProfileBeforeMealGeneration() throws Exception {
         mvc.perform(post("/api/chat").contentType("application/json")
                         .content("{\"userId\":\"demo-user\",\"sessionId\":\"session-a\",\"message\":\"我对虾过敏，给我一日饮食建议\"}"))
-                .andExpect(status().isNotImplemented())
-                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("尚未提供")));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route").value("MEAL_PLAN"))
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("先为虚构用户保存")));
     }
 
     @Test

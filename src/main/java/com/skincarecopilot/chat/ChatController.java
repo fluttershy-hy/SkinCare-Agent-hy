@@ -13,6 +13,7 @@ import com.skincarecopilot.product.ProductQuestionDetector;
 import com.skincarecopilot.product.ProductIngredientStore;
 import com.skincarecopilot.ingredient.IngredientRequest;
 import com.skincarecopilot.ingredient.IngredientService;
+import com.skincarecopilot.meal.MealPlanService;
 import java.io.IOException;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -25,15 +26,18 @@ public class ChatController {
     private final ProductSearchService productSearch;
     private final ProductIngredientStore savedProducts;
     private final IngredientService ingredients;
+    private final MealPlanService meals;
     private static final Pattern POSSIBLE_PRODUCT_REACTION = Pattern.compile(
             "(?:可能|怀疑).{0,12}对(.{2,80}?)(?:过敏|不耐受|有反应)");
 
     public ChatController(ChatService chatService, ProductSearchService productSearch,
-                          ProductIngredientStore savedProducts, IngredientService ingredients) {
+                          ProductIngredientStore savedProducts, IngredientService ingredients,
+                          MealPlanService meals) {
         this.chatService = chatService;
         this.productSearch = productSearch;
         this.savedProducts = savedProducts;
         this.ingredients = ingredients;
+        this.meals = meals;
     }
 
     @PostMapping
@@ -52,10 +56,9 @@ public class ChatController {
         if (request.sessionId() == null || !request.sessionId().matches("[A-Za-z0-9_-]{1,64}")) {
             return ResponseEntity.badRequest().body(new ChatResponse("会话 ID 只能由 1～64 位字母、数字、下划线或短横线组成"));
         }
-        // 餐食校验尚未实现时，不把明显的餐食请求交给模型生成未经校验的方案。
+        // 餐食请求先进入结构化草稿与 Java 校验，不交给普通聊天模型自由生成。
         if (UnsupportedMealRequest.matches(request.message())) {
-            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(new ChatResponse(
-                    "当前版本尚未提供经过资料检索和过敏原校验的餐食建议。请先使用画像保存与查询功能；餐食功能完成后再试。"));
+            return ResponseEntity.ok(meals.plan(request.userId(), request.message().strip()));
         }
         if (request.productName() != null && !request.productName().isBlank()) {
             return productAnswer(request, request.productName().strip());
