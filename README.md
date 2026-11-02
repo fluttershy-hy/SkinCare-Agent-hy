@@ -172,3 +172,5 @@ Day 6 后新增只读产品页面查询能力。在聊天框上方填写**包装
 `bash scripts/discover-literature.sh /tmp/skincare-literature-candidates.json` 批量检索 Europe PMC，并保存去重的文献元数据供人工审读。它不抓取全文、不生成个人风险评分，候选文献也不会自动进入 RAG。证据核查流程和当前访问状态见 [文献发现记录](docs/malassezia-literature.md)。
 
 用户勾选“这是该具体版本包装上的完整成分表”后，成分表会按用户 ID 保存到 H2 的 `user_product_ingredients`；以后在同一聊天窗口问同名产品，后端先读该用户保存的文本，再考虑联网搜索。记录只代表虚构用户自述，不是官方配方。成分分析响应的 `assessment.decision` 只有 `AVOID_CONFIRMED_MATCH`（本次已确认过敏成分名称命中）和 `UNKNOWN`（个人适用性未知）；`signals` 带来源和实验局限，不是致痘分数。云环境如设置 `HTTPS_PROXY`，应用启动时会配置 Java HTTP 客户端使用代理并使 localhost 直连；本机无该变量时维持默认网络行为。
+
+“查看本用户已保存的成分表”可将记录载入第一款或第二款，再在原聊天窗口分析两款；也可删除本用户保存的记录。后端对应 `GET /api/products/saved/{userId}` 和 `DELETE /api/products/saved/{userId}?productName=...`。这些是虚构用户演示数据，当前项目仅以用户 ID 隔离记录，尚无登录认证，不能用于真实个人资料。

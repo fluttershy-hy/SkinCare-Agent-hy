@@ -35,6 +35,21 @@ public class ProductIngredientStore {
         return found.stream().findFirst();
     }
 
+    public List<SavedProduct> list(String userId) {
+        ProfileService.validateUserId(userId);
+        return jdbc.query("SELECT product_name, ingredients_text, source_label "
+                        + "FROM user_product_ingredients WHERE user_id = ? ORDER BY saved_at DESC, product_name",
+                (row, index) -> new SavedProduct(row.getString(1), row.getString(2), row.getString(3)), userId);
+    }
+
+    public boolean delete(String userId, String productName) {
+        ProfileService.validateUserId(userId);
+        if (productName == null || productName.isBlank() || productName.length() > 120)
+            throw new IllegalArgumentException("请提供有效的产品名");
+        return jdbc.update("DELETE FROM user_product_ingredients WHERE user_id = ? AND product_key = ?",
+                userId, key(productName)) > 0;
+    }
+
     private static String key(String name) {
         return name == null ? "" : Normalizer.normalize(name.strip(), Normalizer.Form.NFKC)
                 .replaceAll("\\s+", "").toUpperCase(Locale.ROOT);

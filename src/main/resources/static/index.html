@@ -60,6 +60,8 @@
       <p>未粘贴成分表时，只查找官网候选页面；搜索摘要不等于完整 INCI，不能据此判断适用性。</p>
       <label>完整成分表 <textarea id="ingredient-first" rows="4" style="width:100%" maxlength="6000"></textarea></label>
       <label><input id="ingredient-complete" type="checkbox"> 我确认这是该具体版本包装上的完整成分表，保存供本虚构用户之后查询</label>
+      <p><button id="load-saved-products" type="button">查看本用户已保存的成分表</button></p>
+      <div id="saved-products" aria-live="polite"></div>
       <label>第二款名称（可选） <input id="ingredient-second-name" maxlength="120"></label>
       <label>第二款成分表（可选） <textarea id="ingredient-second" rows="4" style="width:100%" maxlength="6000"></textarea></label>
       <label>本次肤质（留空读取画像） <input id="ingredient-skin" maxlength="80"></label>
@@ -74,6 +76,44 @@
     <button id="send" type="submit">发送</button>
   </form>
   <script>
+    async function showSavedProducts() {
+      const container = document.querySelector('#saved-products');
+      container.replaceChildren();
+      try {
+        const response = await fetch(`/api/products/saved/${encodeURIComponent(userId.value.trim())}`);
+        const products = await response.json();
+        if (!response.ok) throw new Error(products.error || '读取失败');
+        if (!products.length) { container.textContent = '本用户还没有保存成分表。'; return; }
+        for (const product of products) {
+          const row = document.createElement('p');
+          row.append(document.createTextNode(`${product.name}（${product.sourceLabel}） `));
+          for (const [label, nameId, ingredientsId] of [
+            ['载入第一款', '#ingredient-first-name', '#ingredient-first'],
+            ['载入第二款', '#ingredient-second-name', '#ingredient-second']]) {
+            const button = document.createElement('button');
+            button.type = 'button'; button.textContent = label;
+            button.addEventListener('click', () => {
+              document.querySelector(nameId).value = product.name;
+              document.querySelector(ingredientsId).value = product.ingredients;
+              document.querySelector('#ingredient-complete').checked = false;
+              container.insertAdjacentText('afterbegin', `已载入${product.name}；请在聊天框提问。`);
+            });
+            row.append(button, document.createTextNode(' '));
+          }
+          const remove = document.createElement('button');
+          remove.type = 'button'; remove.textContent = '删除记录';
+          remove.addEventListener('click', async () => {
+            const url = `/api/products/saved/${encodeURIComponent(userId.value.trim())}`
+              + `?productName=${encodeURIComponent(product.name)}`;
+            const result = await fetch(url, {method: 'DELETE'});
+            if (result.ok) await showSavedProducts();
+            else container.insertAdjacentText('afterbegin', '删除失败，请重试。');
+          });
+          row.append(remove); container.append(row);
+        }
+      } catch (error) { container.textContent = error.message || '读取失败'; }
+    }
+    document.querySelector('#load-saved-products').addEventListener('click', showSavedProducts);
     async function analyzeIngredients(message) {
       const value = id => document.querySelector(id).value.trim();
       const secondName = value('#ingredient-second-name');
