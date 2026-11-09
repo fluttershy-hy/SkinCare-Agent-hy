@@ -53,10 +53,10 @@
   <p>会话 ID：<span id="session-id"></span> <button id="new-session" type="button">开始新会话</button></p>
   <div id="messages" aria-live="polite"></div>
   <form id="chat-form">
+    <label>想问具体产品？填产品名即可 <input id="ingredient-first-name" maxlength="120" placeholder="例如：CeraVe Moisturizing Cream"></label>
     <details>
-      <summary>这次要分析成分表？在这里粘贴（可选）</summary>
-      <p>同一个聊天窗口回答。成分按逗号、顿号、分号或换行分隔；已确认过敏成分需明确勾选。</p>
-      <label>产品具体全名 <input id="ingredient-first-name" maxlength="120" placeholder="例如：包装上的完整名称"></label>
+      <summary>补充成分表或来源信息（可选）</summary>
+      <p>同一个聊天窗口回答。已收录的产品会由服务端核对官网；其他产品查不到可靠来源时，可在这里粘贴包装成分表。成分按逗号、顿号、分号或换行分隔。</p>
       <label>销售市场 <input id="product-market" maxlength="50" placeholder="例如：中国大陆；需与官网页面一致"></label>
       <label>页面明示的 SKU／型号／版本标识 <input id="product-version" maxlength="80" placeholder="例如：官网页面的 SKU；不等于配方修订版本"></label>
       <label>品牌官网具体产品 URL <input id="official-url" type="url" placeholder="https://已配置的品牌官网/具体产品"></label>

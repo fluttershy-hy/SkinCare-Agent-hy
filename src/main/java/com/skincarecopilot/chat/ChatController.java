@@ -12,6 +12,7 @@ import com.skincarecopilot.product.ProductSearchService;
 import com.skincarecopilot.product.ProductQuestionDetector;
 import com.skincarecopilot.product.ProductIngredientStore;
 import com.skincarecopilot.product.OfficialIngredientService;
+import com.skincarecopilot.product.OfficialProductCatalog;
 import com.skincarecopilot.ingredient.IngredientRequest;
 import com.skincarecopilot.ingredient.IngredientService;
 import com.skincarecopilot.meal.MealPlanService;
@@ -29,18 +30,21 @@ public class ChatController {
     private final IngredientService ingredients;
     private final MealPlanService meals;
     private final OfficialIngredientService officialIngredients;
+    private final OfficialProductCatalog officialCatalog;
     private static final Pattern POSSIBLE_PRODUCT_REACTION = Pattern.compile(
             "(?:可能|怀疑).{0,12}对(.{2,80}?)(?:过敏|不耐受|有反应)");
 
     public ChatController(ChatService chatService, ProductSearchService productSearch,
                           ProductIngredientStore savedProducts, IngredientService ingredients,
-                          MealPlanService meals, OfficialIngredientService officialIngredients) {
+                          MealPlanService meals, OfficialIngredientService officialIngredients,
+                          OfficialProductCatalog officialCatalog) {
         this.chatService = chatService;
         this.productSearch = productSearch;
         this.savedProducts = savedProducts;
         this.ingredients = ingredients;
         this.meals = meals;
         this.officialIngredients = officialIngredients;
+        this.officialCatalog = officialCatalog;
     }
 
     @PostMapping
@@ -102,6 +106,19 @@ public class ChatController {
             return ResponseEntity.ok(new ChatResponse("根据你此前确认并保存的包装成分表：\n"
                     + analysis.answer(), ChatRoute.PRODUCT_SEARCH, sources));
         }
+        var known = officialCatalog.find(productName);
+        if (known.isPresent()) {
+            var entry = known.get();
+            try {
+                var extracted = officialIngredients.extract(entry.identity(), entry.url());
+                if (extracted.isPresent()) return officialAnswer(request, extracted.get());
+            } catch (IOException | InterruptedException exception) {
+                if (exception instanceof InterruptedException) Thread.currentThread().interrupt();
+            }
+            return ResponseEntity.ok(new ChatResponse("已找到这款产品的品牌官网来源，但当前页面无法核对完整成分。"
+                    + "请稍后重试或粘贴包装成分表；不会用旧配方代替。官网：" + entry.url(),
+                    ChatRoute.PRODUCT_SEARCH, List.of()));
+        }
         try {
             var result = productSearch.search(productName);
             if (request.productMarket() != null && !request.productMarket().isBlank()
@@ -112,24 +129,7 @@ public class ChatController {
                     try {
                         var extracted = officialIngredients.extract(identity, page.url());
                         if (extracted.isEmpty()) continue;
-                        var official = extracted.get();
-                        var analysis = ingredients.analyze(new IngredientRequest(request.userId(),
-                                new IngredientRequest.Product(official.productName(),
-                                        String.join("、", official.ingredients())), null,
-                                null, request.concern(), request.confirmedIngredientAllergies(),
-                                request.allergiesConfirmed(), request.message(), request.bodyArea(),
-                                request.currentState(), request.sensitive()));
-                        var sources = new java.util.ArrayList<ChatResponse.Source>();
-                        sources.add(new ChatResponse.Source("official-product-page", "品牌官网", productName,
-                                request.productMarket() + " · " + request.productVersion(), official.sourceUrl(),
-                                official.checkedOn(), "页面明确标注的全成分区域"));
-                        analysis.sources().forEach(s -> sources.add(new ChatResponse.Source(s.url(), s.publisher(),
-                                s.title(), s.section(), s.url(), s.verifiedOn(), "")));
-                        return ResponseEntity.ok(new ChatResponse("从已配置品牌官网提取的候选全成分（"
-                                + official.market() + " / " + official.version() + "，页面查阅于 "
-                                + official.checkedOn() + "）：" + String.join("、", official.ingredients())
-                                + "\n请与手中包装核对版本和批次。\n\n" + analysis.answer(),
-                                ChatRoute.PRODUCT_SEARCH, List.copyOf(sources)));
+                        return officialAnswer(request, extracted.get());
                     } catch (IOException | IllegalArgumentException ignored) {
                         // 单个页面不满足完整性条件或暂不可访问，继续检查其他官网候选。
                     }
@@ -149,6 +149,27 @@ public class ChatController {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body(new ChatResponse("产品页面查询暂不可用，请提供包装上的完整成分表。"));
         }
+    }
+
+    private ResponseEntity<ChatResponse> officialAnswer(ChatRequest request,
+                                                          OfficialIngredientService.OfficialList official) {
+        var analysis = ingredients.analyze(new IngredientRequest(request.userId(),
+                new IngredientRequest.Product(official.productName(),
+                        String.join("、", official.ingredients())), null,
+                null, request.concern(), request.confirmedIngredientAllergies(),
+                request.allergiesConfirmed(), request.message(), request.bodyArea(),
+                request.currentState(), request.sensitive()));
+        var sources = new java.util.ArrayList<ChatResponse.Source>();
+        sources.add(new ChatResponse.Source("official-product-page", "品牌官网", official.productName(),
+                official.market() + " · SKU/型号 " + official.version(), official.sourceUrl(),
+                official.checkedOn(), "页面明确标注的全成分区域"));
+        analysis.sources().forEach(s -> sources.add(new ChatResponse.Source(s.url(), s.publisher(),
+                s.title(), s.section(), s.url(), s.verifiedOn(), "")));
+        return ResponseEntity.ok(new ChatResponse("从品牌官网提取的候选全成分（"
+                + official.market() + " / SKU/型号 " + official.version() + "，页面查阅于 "
+                + official.checkedOn() + "）：" + String.join("、", official.ingredients())
+                + "\nSKU 不代表配方修订版本，请与手中包装核对。\n\n" + analysis.answer(),
+                ChatRoute.PRODUCT_SEARCH, List.copyOf(sources)));
     }
 
     @ExceptionHandler(ModelNotConfiguredException.class)

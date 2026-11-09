@@ -29,15 +29,22 @@ public class OfficialIngredientService {
     private final Set<String> hosts;
 
     @Autowired
-    public OfficialIngredientService(@Value("${SKINCARE_PRODUCT_OFFICIAL_HOSTS:}") String configuredHosts) {
+    public OfficialIngredientService(@Value("${SKINCARE_PRODUCT_OFFICIAL_HOSTS:}") String configuredHosts,
+                                     OfficialProductCatalog catalog) {
         this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8))
-                .followRedirects(HttpClient.Redirect.NEVER).build(), configuredHosts);
+                .followRedirects(HttpClient.Redirect.NEVER).build(), configuredHosts, catalog.approvedHosts());
     }
 
     OfficialIngredientService(HttpClient http, String configuredHosts) {
+        this(http, configuredHosts, Set.of());
+    }
+
+    private OfficialIngredientService(HttpClient http, String configuredHosts, Set<String> approvedHosts) {
         this.http = http;
-        this.hosts = Arrays.stream(configuredHosts.split(","))
+        var configured = Arrays.stream(configuredHosts.split(","))
                 .map(String::strip).map(s -> s.toLowerCase(Locale.ROOT)).filter(s -> !s.isBlank())
+                .collect(Collectors.toUnmodifiableSet());
+        this.hosts = java.util.stream.Stream.concat(configured.stream(), approvedHosts.stream())
                 .collect(Collectors.toUnmodifiableSet());
     }
 
