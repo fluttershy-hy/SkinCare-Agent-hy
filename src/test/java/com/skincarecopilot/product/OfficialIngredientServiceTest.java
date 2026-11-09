@@ -34,11 +34,11 @@ class OfficialIngredientServiceTest {
                 .isPresent());
     }
 
-    @Test void exactHostAllowlistBlocksLookalikeAndLocalTargets() {
-        var service = new OfficialIngredientService(HttpClient.newHttpClient(), "brand.example");
+    @Test void publicHttpsPagesNeedNoBrandConfigurationButLocalTargetsAreBlocked() {
+        var service = new OfficialIngredientService(HttpClient.newHttpClient());
         assertEquals("brand.example", service.checkedUrl("https://brand.example/a").getHost());
-        assertThrows(IllegalArgumentException.class,
-                () -> service.checkedUrl("https://brand.example.evil.test/a"));
+        assertEquals("brand.example.evil.test",
+                service.checkedUrl("https://brand.example.evil.test/a").getHost());
         assertThrows(IllegalArgumentException.class,
                 () -> service.checkedUrl("http://brand.example/a"));
         assertThrows(IllegalArgumentException.class,
@@ -57,8 +57,28 @@ class OfficialIngredientServiceTest {
         var result = OfficialIngredientService.parse(us, "https://brand.example/cream", html);
         assertTrue(result.isPresent());
         assertEquals(5, result.get().ingredients().size());
-        assertTrue(result.get().sourceNote().contains("不等于配方修订版本"));
+        assertTrue(result.get().sourceNote().contains("来源身份"));
         assertTrue(OfficialIngredientService.parse(new OfficialIngredientService.Identity(
                 "Moisturizing Cream", "US", "other-sku"), "https://brand.example/cream", html).isEmpty());
+    }
+
+    @Test void productNameAloneCanParseClearlyLabelledList() {
+        String html = "<html><title>虚构面霜 A</title><body><h2>全成分</h2>"
+                + "<p>水，甘油，烟酰胺，神经酰胺 NP，透明质酸钠</p></body></html>";
+        assertEquals(5, OfficialIngredientService.parse(
+                new OfficialIngredientService.Identity("虚构面霜 A", null, null),
+                "https://brand.example/a", html).orElseThrow().ingredients().size());
+    }
+
+    @Test void extractsStandaloneIngredientsPanelAsUnverifiedCandidate() {
+        String html = "<html><title>Vanicream™ Moisturizing Cream</title><body>"
+                + "<button aria-controls='panel-ingredients'>Ingredients</button>"
+                + "<div id='panel-ingredients'><p>water, petrolatum, sorbitol, cetearyl alcohol, "
+                + "propylene glycol, sorbic acid</p><p>Ingredient Information</p></div></body></html>";
+        var result = OfficialIngredientService.parse(new OfficialIngredientService.Identity(
+                "Vanicream Moisturizing Cream", null, null), "https://example.com/product", html).orElseThrow();
+        assertEquals(6, result.ingredients().size());
+        assertEquals("sorbic acid", result.ingredients().get(5));
+        assertTrue(result.sourceNote().contains("完整性"));
     }
 }

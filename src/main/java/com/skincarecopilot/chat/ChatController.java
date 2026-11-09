@@ -111,7 +111,7 @@ public class ChatController {
             var entry = known.get();
             try {
                 var extracted = officialIngredients.extract(entry.identity(), entry.url());
-                if (extracted.isPresent()) return officialAnswer(request, extracted.get());
+                if (extracted.isPresent()) return officialAnswer(request, extracted.get(), true);
             } catch (IOException | InterruptedException exception) {
                 if (exception instanceof InterruptedException) Thread.currentThread().interrupt();
             }
@@ -121,25 +121,22 @@ public class ChatController {
         }
         try {
             var result = productSearch.search(productName);
-            if (request.productMarket() != null && !request.productMarket().isBlank()
-                    && request.productVersion() != null && !request.productVersion().isBlank()) {
-                var identity = new OfficialIngredientService.Identity(productName,
-                        request.productMarket(), request.productVersion());
-                for (var page : result.officialPageCandidates()) {
-                    try {
-                        var extracted = officialIngredients.extract(identity, page.url());
-                        if (extracted.isEmpty()) continue;
-                        return officialAnswer(request, extracted.get());
-                    } catch (IOException | IllegalArgumentException ignored) {
-                        // 单个页面不满足完整性条件或暂不可访问，继续检查其他官网候选。
-                    }
+            var identity = new OfficialIngredientService.Identity(productName,
+                    request.productMarket(), request.productVersion());
+            for (var page : result.officialPageCandidates()) {
+                try {
+                    var extracted = officialIngredients.extract(identity, page.url());
+                    if (extracted.isEmpty()) continue;
+                    return officialAnswer(request, extracted.get(), false);
+                } catch (IOException | IllegalArgumentException ignored) {
+                    // 页面无法访问或未标注完整成分，继续检查其他候选。
                 }
             }
             StringBuilder answer = new StringBuilder("你问的是具体产品“").append(productName)
-                    .append("”。本地没有这款产品的已确认成分表；我先查官网候选页。\n")
+                    .append("”。本地没有这款产品的已确认成分表；我先查网页候选。\n")
                     .append(result.note());
             for (var page : result.officialPageCandidates()) {
-                answer.append("\n官网候选：").append(page.title()).append(" ").append(page.url());
+                answer.append("\n网页候选：").append(page.title()).append(" ").append(page.url());
             }
             answer.append("\n搜索摘要不是完整 INCI。请粘贴包装成分表，再结合使用部位和当前状态讨论；"
                     + "不能仅凭产品名判断面部或身体是否适合。 ");
@@ -152,7 +149,8 @@ public class ChatController {
     }
 
     private ResponseEntity<ChatResponse> officialAnswer(ChatRequest request,
-                                                          OfficialIngredientService.OfficialList official) {
+                                                          OfficialIngredientService.OfficialList official,
+                                                          boolean catalogVerified) {
         var analysis = ingredients.analyze(new IngredientRequest(request.userId(),
                 new IngredientRequest.Product(official.productName(),
                         String.join("、", official.ingredients())), null,
@@ -160,15 +158,16 @@ public class ChatController {
                 request.allergiesConfirmed(), request.message(), request.bodyArea(),
                 request.currentState(), request.sensitive()));
         var sources = new java.util.ArrayList<ChatResponse.Source>();
-        sources.add(new ChatResponse.Source("official-product-page", "品牌官网", official.productName(),
-                official.market() + " · SKU/型号 " + official.version(), official.sourceUrl(),
-                official.checkedOn(), "页面明确标注的全成分区域"));
+        String publisher = catalogVerified ? "品牌官网" : "网页候选（来源未核实）";
+        sources.add(new ChatResponse.Source("product-page", publisher, official.productName(),
+                "市场 " + (official.market() == null ? "未核对" : official.market())
+                        + " · SKU/型号 " + (official.version() == null ? "未核对" : official.version()),
+                official.sourceUrl(), official.checkedOn(), "页面标注的全成分区域"));
         analysis.sources().forEach(s -> sources.add(new ChatResponse.Source(s.url(), s.publisher(),
                 s.title(), s.section(), s.url(), s.verifiedOn(), "")));
-        return ResponseEntity.ok(new ChatResponse("从品牌官网提取的候选全成分（"
-                + official.market() + " / SKU/型号 " + official.version() + "，页面查阅于 "
+        return ResponseEntity.ok(new ChatResponse("从" + publisher + "提取的候选全成分（页面查阅于 "
                 + official.checkedOn() + "）：" + String.join("、", official.ingredients())
-                + "\nSKU 不代表配方修订版本，请与手中包装核对。\n\n" + analysis.answer(),
+                + "\n请与手中包装核对；SKU 不代表配方修订版本。\n\n" + analysis.answer(),
                 ChatRoute.PRODUCT_SEARCH, List.copyOf(sources)));
     }
 

@@ -2,6 +2,9 @@ package com.skincarecopilot.product;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.InetAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -9,48 +12,33 @@ import java.text.Normalizer;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** 只从预先登记的品牌官网、明确标为全成分的区域提取；不使用搜索摘要。 */
+/** 从公开 HTTPS 产品页提取候选成分；网页来源未经核实，不使用搜索摘要。 */
 @Service
 public class OfficialIngredientService {
     private final HttpClient http;
-    private final Set<String> hosts;
 
-    @Autowired
-    public OfficialIngredientService(@Value("${SKINCARE_PRODUCT_OFFICIAL_HOSTS:}") String configuredHosts,
-                                     OfficialProductCatalog catalog) {
+    public OfficialIngredientService() {
         this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8))
-                .followRedirects(HttpClient.Redirect.NEVER).build(), configuredHosts, catalog.approvedHosts());
+                .followRedirects(HttpClient.Redirect.NEVER).build());
     }
 
-    OfficialIngredientService(HttpClient http, String configuredHosts) {
-        this(http, configuredHosts, Set.of());
-    }
-
-    private OfficialIngredientService(HttpClient http, String configuredHosts, Set<String> approvedHosts) {
+    OfficialIngredientService(HttpClient http) {
         this.http = http;
-        var configured = Arrays.stream(configuredHosts.split(","))
-                .map(String::strip).map(s -> s.toLowerCase(Locale.ROOT)).filter(s -> !s.isBlank())
-                .collect(Collectors.toUnmodifiableSet());
-        this.hosts = java.util.stream.Stream.concat(configured.stream(), approvedHosts.stream())
-                .collect(Collectors.toUnmodifiableSet());
     }
 
     public Optional<OfficialList> extract(Identity identity, String url) throws IOException, InterruptedException {
         validateIdentity(identity);
         URI uri = checkedUrl(url);
+        checkPublicDestination(uri);
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(15))
                 .header("Accept", "text/html").GET().build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
@@ -63,26 +51,44 @@ public class OfficialIngredientService {
     URI checkedUrl(String url) {
         URI uri;
         try { uri = URI.create(url); }
-        catch (Exception e) { throw new IllegalArgumentException("官网 URL 无效"); }
+        catch (Exception e) { throw new IllegalArgumentException("产品页 URL 无效"); }
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
-        if (!"https".equalsIgnoreCase(uri.getScheme()) || !hosts.contains(host)
-                || host.equals("localhost") || host.matches("[0-9.]+") || host.contains(":")
+        if (!"https".equalsIgnoreCase(uri.getScheme()) || host.isBlank()
+                || host.equals("localhost") || host.endsWith(".localhost")
+                || host.endsWith(".local") || host.endsWith(".internal")
+                || host.matches("[0-9.]+") || host.contains(":")
                 || uri.getUserInfo() != null || (uri.getPort() != -1 && uri.getPort() != 443)
                 || uri.getFragment() != null) {
-            throw new IllegalArgumentException("仅能读取预先配置的 HTTPS 品牌官网域名");
+            throw new IllegalArgumentException("仅能读取公开 HTTPS 产品页，不能访问本地或内网地址");
         }
         return uri;
     }
 
+    private void checkPublicDestination(URI uri) throws IOException {
+        // 代理环境由出站代理解析并过滤目标；本地直连才执行 DNS 私网地址检查。
+        ProxySelector selector = ProxySelector.getDefault();
+        if (selector != null && selector.select(uri).stream()
+                .anyMatch(proxy -> proxy.type() == Proxy.Type.HTTP)) return;
+        for (InetAddress address : InetAddress.getAllByName(uri.getHost())) {
+            if (address.isAnyLocalAddress() || address.isLoopbackAddress()
+                    || address.isLinkLocalAddress() || address.isSiteLocalAddress()
+                    || address.isMulticastAddress()) throw new IllegalArgumentException("不能访问本地或内网地址");
+        }
+    }
+
     static void validateIdentity(Identity identity) {
-        if (identity == null || invalid(identity.productName(), 120) || invalid(identity.market(), 50)
-                || invalid(identity.version(), 80))
-            throw new IllegalArgumentException("需提供具体产品全名、销售市场和页面明示的 SKU／型号／版本标识");
+        if (identity == null || invalid(identity.productName(), 120)
+                || invalidOptional(identity.market(), 50) || invalidOptional(identity.version(), 80))
+            throw new IllegalArgumentException("需提供不超过 120 字的具体产品全名");
     }
 
     private static boolean invalid(String text, int max) {
         return text == null || text.isBlank() || text.length() > max
                 || text.chars().anyMatch(Character::isISOControl);
+    }
+
+    private static boolean invalidOptional(String text, int max) {
+        return text != null && (text.length() > max || text.chars().anyMatch(Character::isISOControl));
     }
 
     /** 包级可测的纯解析函数；页面上三项身份信息和全成分标签必须同时出现。 */
@@ -91,9 +97,11 @@ public class OfficialIngredientService {
         Document page = Jsoup.parse(html, url);
         String title = page.title();
         String visible = page.body() == null ? "" : page.body().text();
-        if (!containsNormalized(title, identity.productName())
-                || !marketMatches(page, visible, identity.market())
-                || !versionMatches(page, visible, identity.version())) return Optional.empty();
+        if (!matchesProductName(title, identity.productName())
+                || (identity.market() != null && !identity.market().isBlank()
+                    && !marketMatches(page, visible, identity.market()))
+                || (identity.version() != null && !identity.version().isBlank()
+                    && !versionMatches(page, visible, identity.version()))) return Optional.empty();
         List<String> ingredients = List.of();
         // data-full-ingredients 适合明确暴露完整 INCI 的官网模板。
         for (Element node : page.select("[data-full-ingredients]")) {
@@ -126,10 +134,23 @@ public class OfficialIngredientService {
                 if (plausible(ingredients)) break;
             }
         }
+        if (!plausible(ingredients)) {
+            // 有些产品页只写 Ingredients，取该独立区域的首段，不拼接 FAQ 或“关键成分”介绍。
+            for (Element heading : page.select("button[aria-controls],h2,h3")) {
+                if (!heading.text().strip().matches("(?i)^ingredients$")) continue;
+                String target = heading.attr("aria-controls");
+                Element section = !target.isBlank() ? page.getElementById(target) : heading.nextElementSibling();
+                if (section == null && heading.parent() != null) section = heading.parent().nextElementSibling();
+                Element first = section == null ? null : section.selectFirst("p");
+                if (first == null) continue;
+                ingredients = split(first.text());
+                if (plausible(ingredients)) break;
+            }
+        }
         if (!plausible(ingredients)) return Optional.empty();
         return Optional.of(new OfficialList(identity.productName(), identity.market(), identity.version(),
                 List.copyOf(ingredients), url, LocalDate.now().toString(),
-                "品牌官网页面的明确全成分区域；SKU/型号不等于配方修订版本，具体包装批次仍需核对"));
+                "产品网页成分区的候选列表；来源身份、完整性和包装版本尚需核对"));
     }
 
     private static boolean marketMatches(Document page, String visible, String market) {
@@ -158,6 +179,14 @@ public class OfficialIngredientService {
                 .toLowerCase(Locale.ROOT);
         String b = Normalizer.normalize(needle, Normalizer.Form.NFKC).replaceAll("\\s+", "")
                 .toLowerCase(Locale.ROOT);
+        return a.contains(b);
+    }
+
+    private static boolean matchesProductName(String title, String name) {
+        String a = Normalizer.normalize(title.replace("™", "").replace("®", ""), Normalizer.Form.NFKC)
+                .replaceAll("[^\\p{L}\\p{N}]", "").toLowerCase(Locale.ROOT);
+        String b = Normalizer.normalize(name, Normalizer.Form.NFKC)
+                .replaceAll("[^\\p{L}\\p{N}]", "").toLowerCase(Locale.ROOT);
         return a.contains(b);
     }
 

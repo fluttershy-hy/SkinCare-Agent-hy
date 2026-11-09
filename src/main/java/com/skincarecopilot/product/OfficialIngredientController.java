@@ -18,13 +18,13 @@ public class OfficialIngredientController {
 
     public OfficialIngredientController(OfficialIngredientService service) { this.service = service; }
 
-    @PostMapping("/official-ingredients")
+    @PostMapping({"/web-ingredients", "/official-ingredients"})
     public ResponseEntity<?> extract(@RequestBody Request request) throws IOException, InterruptedException {
         var result = service.extract(new OfficialIngredientService.Identity(request.productName(),
                 request.market(), request.version()), request.url());
         return result.<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
-                        "error", "官网页面未同时提供可核对的产品全名、市场、版本和明确标注的完整成分表；请核对包装，不能从摘要补全。")));
+                        "error", "该网页未提供名称匹配且明确标注的完整成分表；请核对包装，不能从摘要补全。")));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -36,7 +36,7 @@ public class OfficialIngredientController {
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
     public Map<String, String> unavailable(Exception exception) {
         if (exception instanceof InterruptedException) Thread.currentThread().interrupt();
-        return Map.of("error", "品牌官网暂不可访问，未导入成分表。请稍后重试或核对包装。 ");
+        return Map.of("error", "产品网页暂不可访问，未导入成分表。请稍后重试或核对包装。");
     }
 
     public record Request(String productName, String market, String version, String url) {}

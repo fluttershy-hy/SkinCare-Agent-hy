@@ -11,7 +11,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {"SKINCARE_LLM_API_KEY=", "spring.datasource.url=jdbc:h2:mem:chat-test;DB_CLOSE_DELAY=-1"})
+@SpringBootTest(properties = {"SKINCARE_LLM_API_KEY=", "SKINCARE_SEARCH_API_KEY=",
+        "spring.datasource.url=jdbc:h2:mem:chat-test;DB_CLOSE_DELAY=-1"})
 @AutoConfigureMockMvc
 class ChatControllerTest {
     @Autowired
@@ -68,7 +69,7 @@ class ChatControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
                 .andExpect(jsonPath("$.sources").isEmpty())
-                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("官网域名")));
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("检索密钥")));
     }
 
     @Test
@@ -78,7 +79,7 @@ class ChatControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
                 .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("完整 INCI")))
-                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("尚未配置可信")));
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("检索密钥")));
     }
 
     @Test

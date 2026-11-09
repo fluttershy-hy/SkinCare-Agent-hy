@@ -59,8 +59,8 @@
       <p>同一个聊天窗口回答。已收录的产品会由服务端核对官网；其他产品查不到可靠来源时，可在这里粘贴包装成分表。成分按逗号、顿号、分号或换行分隔。</p>
       <label>销售市场 <input id="product-market" maxlength="50" placeholder="例如：中国大陆；需与官网页面一致"></label>
       <label>页面明示的 SKU／型号／版本标识 <input id="product-version" maxlength="80" placeholder="例如：官网页面的 SKU；不等于配方修订版本"></label>
-      <label>品牌官网具体产品 URL <input id="official-url" type="url" placeholder="https://已配置的品牌官网/具体产品"></label>
-      <button id="extract-official" type="button">核对并提取官网全成分</button>
+      <label>具体产品网页 URL <input id="official-url" type="url" placeholder="https://产品页面；来源可能未经核实"></label>
+      <button id="extract-official" type="button">从网页提取候选成分</button>
       <p id="official-status" aria-live="polite"></p>
       <p>未粘贴成分表时，只查找官网候选页面；搜索摘要不等于完整 INCI，不能据此判断适用性。</p>
       <label>完整成分表 <textarea id="ingredient-first" rows="4" style="width:100%" maxlength="6000"></textarea></label>
@@ -86,21 +86,21 @@
       const status = document.querySelector('#official-status');
       status.replaceChildren();
       try {
-        const response = await fetch('/api/products/official-ingredients', {
+        const response = await fetch('/api/products/web-ingredients', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({productName: value('#ingredient-first-name'),
             market: value('#product-market'), version: value('#product-version'), url: value('#official-url')})
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || '官网全成分提取失败');
+        if (!response.ok) throw new Error(data.error || '网页成分提取失败');
         document.querySelector('#ingredient-first').value = data.ingredients.join('、');
         document.querySelector('#ingredient-complete').checked = false;
-        status.append(document.createTextNode(`已从官网页面提取 ${data.ingredients.length} 项；请核对包装版本与批次。来源：`));
+        status.append(document.createTextNode(`已从网页提取 ${data.ingredients.length} 项候选成分；来源未核实，请核对包装。链接：`));
         const link = document.createElement('a');
         link.href = data.sourceUrl; link.textContent = data.sourceUrl;
         link.target = '_blank'; link.rel = 'noopener noreferrer';
         status.append(link);
-      } catch (error) { status.textContent = error.message || '官网全成分提取失败'; }
+      } catch (error) { status.textContent = error.message || '网页成分提取失败'; }
     });
     async function showSavedProducts() {
       const container = document.querySelector('#saved-products');
@@ -204,7 +204,7 @@
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
       }
-      if (url.protocol === 'https:' && source.publisher === '品牌官网') {
+      if (url.protocol === 'https:' && ['品牌官网', '网页候选（来源未核实）'].includes(source.publisher)) {
         link.href = url.href;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
