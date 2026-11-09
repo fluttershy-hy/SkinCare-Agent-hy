@@ -70,7 +70,7 @@ public class OfficialIngredientService {
     static void validateIdentity(Identity identity) {
         if (identity == null || invalid(identity.productName(), 120) || invalid(identity.market(), 50)
                 || invalid(identity.version(), 80))
-            throw new IllegalArgumentException("需提供具体产品全名、销售市场和包装版本标识");
+            throw new IllegalArgumentException("需提供具体产品全名、销售市场和页面明示的 SKU／型号／版本标识");
     }
 
     private static boolean invalid(String text, int max) {
@@ -85,8 +85,8 @@ public class OfficialIngredientService {
         String title = page.title();
         String visible = page.body() == null ? "" : page.body().text();
         if (!containsNormalized(title, identity.productName())
-                || !containsNormalized(visible, identity.market())
-                || !containsNormalized(visible, identity.version())) return Optional.empty();
+                || !marketMatches(page, visible, identity.market())
+                || !versionMatches(page, visible, identity.version())) return Optional.empty();
         List<String> ingredients = List.of();
         // data-full-ingredients 适合明确暴露完整 INCI 的官网模板。
         for (Element node : page.select("[data-full-ingredients]")) {
@@ -96,20 +96,54 @@ public class OfficialIngredientService {
             if (plausible(ingredients)) break;
         }
         if (!plausible(ingredients)) {
-            for (Element heading : page.select("h2,h3,h4,dt,strong,button")) {
-                if (!heading.text().strip().matches("(?i)^(full ingredients|complete ingredient list|全成分|完整成分表)$"))
+            // CeraVe 的官网把全成分放在 details 中；只取第一段，排除后面的包装更新提示。
+            for (Element details : page.select("details")) {
+                Element summary = details.selectFirst("summary[data-open],summary[data-closed]");
+                Element first = details.selectFirst(".keyIngredients-details__content > p:first-child");
+                if (summary == null || first == null
+                        || !(summary.attr("data-open") + summary.attr("data-closed"))
+                        .toLowerCase(Locale.ROOT).contains("full ingredient list")) continue;
+                ingredients = split(first.text());
+                if (plausible(ingredients)) break;
+            }
+        }
+        if (!plausible(ingredients)) {
+            for (Element heading : page.select("h2,h3,h4,h5,dt,strong,button")) {
+                if (!heading.text().strip().matches("(?i)^(full ingredients|full ingredient list:?|complete ingredient list|全成分|完整成分表)$"))
                     continue;
                 Element next = heading.nextElementSibling();
                 if (next == null && heading.parent() != null) next = heading.parent().nextElementSibling();
-                if (next == null) continue;
-                ingredients = split(next.text());
+                String listed = next == null ? "" : next.text();
+                if (listed.isBlank() && heading.parent() != null) listed = heading.parent().ownText();
+                ingredients = split(listed);
                 if (plausible(ingredients)) break;
             }
         }
         if (!plausible(ingredients)) return Optional.empty();
         return Optional.of(new OfficialList(identity.productName(), identity.market(), identity.version(),
                 List.copyOf(ingredients), url, LocalDate.now().toString(),
-                "品牌官网页面的明确全成分区域；具体包装批次仍需核对"));
+                "品牌官网页面的明确全成分区域；SKU/型号不等于配方修订版本，具体包装批次仍需核对"));
+    }
+
+    private static boolean marketMatches(Document page, String visible, String market) {
+        String requested = market.strip().toLowerCase(Locale.ROOT);
+        if (Set.of("us", "usa", "united states").contains(requested)) {
+            return "en-us".equalsIgnoreCase(page.selectFirst("html") == null ? ""
+                    : page.selectFirst("html").attr("lang"))
+                    || page.select("[data-country=US]").size() > 0;
+        }
+        return containsNormalized(visible, market);
+    }
+
+    private static boolean versionMatches(Document page, String visible, String version) {
+        if (containsNormalized(visible, version)) return true;
+        for (Element node : page.select("[data-tag-product-id],[data-tag-product_info],[itemprop=sku],[itemprop=mpn]")) {
+            for (String attribute : List.of("data-tag-product-id", "data-tag-product_info", "content")) {
+                if (node.hasAttr(attribute) && (node.attr(attribute).equals(version)
+                        || node.attr(attribute).endsWith("::" + version))) return true;
+            }
+        }
+        return false;
     }
 
     private static boolean containsNormalized(String haystack, String needle) {
@@ -123,8 +157,8 @@ public class OfficialIngredientService {
     private static List<String> split(String text) {
         if (text.length() > 6000) return List.of();
         List<String> items = new ArrayList<>();
-        for (String part : text.split("[,，、;；\\n]+")) {
-            String item = part.strip();
+        for (String part : text.split("[,，、;；•\\n]+")) {
+            String item = part.strip().replaceFirst("[.。]+$", "");
             if (item.isBlank() || item.length() > 120) return List.of();
             items.add(item);
         }

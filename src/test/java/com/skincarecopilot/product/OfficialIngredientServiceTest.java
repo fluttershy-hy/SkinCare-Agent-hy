@@ -46,4 +46,19 @@ class OfficialIngredientServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> service.checkedUrl("https://localhost/a"));
     }
+
+    @Test void usMarketAndSkuCanBeCheckedWithoutCallingSkuAFormulaRevision() {
+        var us = new OfficialIngredientService.Identity("Moisturizing Cream", "US", "3606000537729");
+        String html = "<html lang='en-US'><head><title>Moisturizing Cream | Brand</title></head><body>"
+                + "<div data-tag-product-id='3606000537729'></div>"
+                + "<details><summary data-open='Close Full Ingredient List'></summary>"
+                + "<div class='keyIngredients-details__content'><p>WATER, GLYCERIN, CETEARYL ALCOHOL, "
+                + "PETROLATUM, CERAMIDE NP</p><p>Ingredient lists may change.</p></div></details></body></html>";
+        var result = OfficialIngredientService.parse(us, "https://brand.example/cream", html);
+        assertTrue(result.isPresent());
+        assertEquals(5, result.get().ingredients().size());
+        assertTrue(result.get().sourceNote().contains("不等于配方修订版本"));
+        assertTrue(OfficialIngredientService.parse(new OfficialIngredientService.Identity(
+                "Moisturizing Cream", "US", "other-sku"), "https://brand.example/cream", html).isEmpty());
+    }
 }
