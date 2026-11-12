@@ -178,3 +178,9 @@ Day 6 后新增只读产品网页查询能力。在聊天框填写具体产品�
 用户勾选“这是该具体版本包装上的完整成分表”后，成分表会按用户 ID 保存到 H2 的 `user_product_ingredients`；以后在同一聊天窗口问同名产品，后端先读该用户保存的文本，再考虑联网搜索。记录只代表虚构用户自述，不是官方配方。成分分析响应的 `assessment.decision` 只有 `AVOID_CONFIRMED_MATCH`（本次已确认过敏成分名称命中）和 `UNKNOWN`（个人适用性未知）；`signals` 带来源和实验局限，不是致痘分数。云环境如设置 `HTTPS_PROXY`，应用启动时会配置 Java HTTP 客户端使用代理并使 localhost 直连；本机无该变量时维持默认网络行为。
 
 “查看本用户已保存的成分表”可将记录载入第一款或第二款，再在原聊天窗口分析两款；也可删除本用户保存的记录。后端对应 `GET /api/products/saved/{userId}` 和 `DELETE /api/products/saved/{userId}?productName=...`。这些是虚构用户演示数据，当前项目仅以用户 ID 隔离记录，尚无登录认证，不能用于真实个人资料。
+
+### 前端原型接入
+
+首页仍由 Spring Boot 的 `static/index.html` 提供，无需单独启动前端构建服务。页面保留横向聊天、固定左侧导航、镜子档案、三套背景和 24 帧滴管动画。`static/css/app.css` 放视觉样式，`static/js/main.js` 负责聊天与成分分析，`api.js` 统一请求，`profile.js` 管理已确认画像，`theme.js` 管理主题与卷轴开场，`animation.js` 在真实请求期间循环播放滴管，`tools.js` 处理网页候选成分、已保存产品及知识片段检索。图片与帧文件在 `static/assets/`。
+
+输入成分表后，聊天会调用 `/api/ingredients/analyze`；未输入成分表时调用 `/api/chat`。左侧「常用入口」只会填入问题，不会生成演示回答。原型中的模拟等待已移除。浏览器刷新会开启新的内存会话；点击「新对话」也会更换会话 ID。保存画像必须勾选确认，聊天中提到的怀疑过敏不会自动写入画像。
