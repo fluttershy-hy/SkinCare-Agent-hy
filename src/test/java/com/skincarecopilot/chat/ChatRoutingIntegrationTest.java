@@ -41,7 +41,7 @@ class ChatRoutingIntegrationTest {
             assertEquals("aad-demo", response.sources().get(0).id());
             assertEquals("Original excerpt", response.sources().get(0).excerpt());
             assertTrue(requestBody.get().toString().contains(source.text()));
-            assertTrue(requestBody.get().toString().contains("只依据下列片段回答"));
+            assertTrue(requestBody.get().toString().contains("只使用真正相关的片段"));
             ChatResponse followUp = service.replyWithSources("demo-user", "session-1", "请结合我的情况给点建议");
             assertEquals(ChatRoute.COMBINED, followUp.route());
             assertFalse(followUp.sources().isEmpty());

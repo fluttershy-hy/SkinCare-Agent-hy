@@ -9,6 +9,34 @@ class OfficialIngredientServiceTest {
     private final OfficialIngredientService.Identity identity = new OfficialIngredientService.Identity(
             "虚构品牌 A 面霜", "中国大陆", "2026 配方版");
 
+    @Test void extractsPackagingIngredientTableWithoutTreatingRatingsAsIngredients() {
+        String html = "<html><title>自然堂雪域百合补水面膜</title><body>"
+                + "<font><b>自然堂雪域百合补水面膜成分表（包装成分）</b></font><div>"
+                + "<table class='table'><tr><th>成分名称</th><th>风险</th></tr>"
+                + "<tr><td class='table_mark'>水</td><td>1</td></tr>"
+                + "<tr><td class='table_mark'>甘油</td><td>2</td></tr>"
+                + "<tr><td class='table_mark'>丁二醇</td><td>1</td></tr>"
+                + "<tr><td class='table_mark'>海藻糖</td><td>2</td></tr>"
+                + "<tr><td class='table_mark'>尿囊素</td><td>1</td></tr></table></div></body></html>";
+        var result = OfficialIngredientService.parse(new OfficialIngredientService.Identity(
+                "自然堂雪域百合补水面膜", null, null), "https://example.com/product", html).orElseThrow();
+        assertEquals(java.util.List.of("水", "甘油", "丁二醇", "海藻糖", "尿囊素"), result.ingredients());
+    }
+
+    @Test void joinsMainAndTraceIngredientTablesInPackagingOrder() {
+        String html = "<html><title>示例面膜</title><body>"
+                + "<font><b>示例面膜成分表（包装成分）</b></font><div><table class='table'>"
+                + "<tr><td class='table_mark'>水</td></tr><tr><td class='table_mark'>甘油</td></tr>"
+                + "<tr><td class='table_mark'>丁二醇</td></tr><tr><td class='table_mark'>海藻糖</td></tr>"
+                + "<tr><td class='table_mark'>尿囊素</td></tr></table>"
+                + "<b>其他微量成分：</b><table class='table'>"
+                + "<tr><td class='table_mark'>黄原胶</td></tr></table></div></body></html>";
+        var result = OfficialIngredientService.parse(new OfficialIngredientService.Identity(
+                "示例面膜", null, null), "https://example.com/mask", html).orElseThrow();
+        assertEquals(6, result.ingredients().size());
+        assertEquals("黄原胶", result.ingredients().get(5));
+    }
+
     @Test void extractsOnlyExplicitFullListWithMatchingIdentity() {
         String html = "<html><head><title>虚构品牌 A 面霜 - 品牌官网</title></head><body>"
                 + "<p>中国大陆；2026 配方版</p><h2>全成分</h2>"

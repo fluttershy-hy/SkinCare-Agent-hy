@@ -165,9 +165,10 @@ public class ChatController {
                 official.sourceUrl(), official.checkedOn(), "页面标注的全成分区域"));
         analysis.sources().forEach(s -> sources.add(new ChatResponse.Source(s.url(), s.publisher(),
                 s.title(), s.section(), s.url(), s.verifiedOn(), "")));
-        return ResponseEntity.ok(new ChatResponse("从" + publisher + "提取的候选全成分（页面查阅于 "
-                + official.checkedOn() + "）：" + String.join("、", official.ingredients())
-                + "\n请与手中包装核对；SKU 不代表配方修订版本。\n\n" + analysis.answer(),
+        return ResponseEntity.ok(new ChatResponse(analysis.answer()
+                + "\n\n核对说明：本次参考了网页候选中的 " + official.ingredients().size()
+                + " 项成分（查阅于 " + official.checkedOn()
+                + "）；请以手中包装为准，SKU 不代表配方修订版本。",
                 ChatRoute.PRODUCT_SEARCH, List.copyOf(sources)));
     }
 

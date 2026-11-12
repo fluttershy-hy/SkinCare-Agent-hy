@@ -50,7 +50,8 @@ public class ProductSearchService {
         if (apiKey.isBlank()) {
             return new ProductSearchResult(product, List.of(), "服务端尚未配置联网检索密钥 SKINCARE_SEARCH_API_KEY。");
         }
-        String body = json.writeValueAsString(java.util.Map.of("query", product + " 官方 全成分 INCI",
+        // 中文产品页常写“成分表”而不写 INCI；加引号可减少同品牌其他商品的噪声。
+        String body = json.writeValueAsString(java.util.Map.of("query", "\"" + product + "\" 成分表",
                 "max_results", 5, "include_answer", false));
         HttpRequest request = HttpRequest.newBuilder(endpoint).timeout(Duration.ofSeconds(15))
                 .header("Authorization", "Bearer " + apiKey)

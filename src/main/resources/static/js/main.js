@@ -31,7 +31,7 @@ function message(label, text, isUser = false, isError = false) {
 }
 function appendSources(sources = []) {
   if (!sources.length) return;
-  const panel = document.createElement('details'); panel.className = 'sources';
+  const panel = document.createElement('details'); panel.className = 'sources'; panel.open = true;
   const heading = document.createElement('summary'); heading.textContent = `查看依据（${sources.length}）`;
   panel.append(heading);
   const list = document.createElement('ul');

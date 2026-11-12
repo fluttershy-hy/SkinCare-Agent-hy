@@ -26,7 +26,7 @@ class ProductSearchServiceTest {
         server.createContext("/search", exchange -> {
             assertEquals("Bearer test-key", exchange.getRequestHeaders().getFirst("Authorization"));
             assertTrue(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)
-                    .contains("示例保湿霜 官方 全成分 INCI"));
+                    .contains("\\\"示例保湿霜\\\" 成分表"));
             String result = "{\"results\":["
                     + "{\"title\":\"示例™保湿霜 官方页面\",\"url\":\"https://brand.example/product\",\"content\":\"成分摘要可能不全\"},"
                     + "{\"title\":\"示例保湿霜\",\"url\":\"https://brand.example.evil.test/x\",\"content\":\"假页面\"},"

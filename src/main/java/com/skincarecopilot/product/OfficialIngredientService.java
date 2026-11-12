@@ -103,8 +103,28 @@ public class OfficialIngredientService {
                 || (identity.version() != null && !identity.version().isBlank()
                     && !versionMatches(page, visible, identity.version()))) return Optional.empty();
         List<String> ingredients = List.of();
+        // 一些公开成分页把“包装成分”放在独立表格。只读取名称列，忽略站点的风险/功效评分。
+        for (Element label : page.select("b,strong")) {
+            if (!containsNormalized(label.text(), identity.productName())
+                    || !label.text().contains("成分表")) continue;
+            Element wrapper = label.parent();
+            Element table = null;
+            for (int i = 0; wrapper != null && i < 3 && table == null; i++, wrapper = wrapper.nextElementSibling()) {
+                table = wrapper.is("table.table") ? wrapper : wrapper.selectFirst("table.table");
+            }
+            if (table == null) continue;
+            List<String> listed = new ArrayList<>(table.select("tr td.table_mark").eachText());
+            // 同一包装表可能分为“主要成分”和紧随其后的“其他微量成分”两张表。
+            var tables = page.select("table.table");
+            if (tables.size() == 2 && tables.get(0) == table && page.select("b,strong").stream()
+                    .anyMatch(node -> node.text().contains("其他微量成分"))) {
+                listed.addAll(tables.get(1).select("tr td.table_mark").eachText());
+            }
+            if (plausible(listed)) { ingredients = listed; break; }
+        }
         // data-full-ingredients 适合明确暴露完整 INCI 的官网模板。
         for (Element node : page.select("[data-full-ingredients]")) {
+            if (plausible(ingredients)) break;
             ingredients = split(node.hasAttr("data-full-ingredients")
                     && !node.attr("data-full-ingredients").isBlank()
                     ? node.attr("data-full-ingredients") : node.text());

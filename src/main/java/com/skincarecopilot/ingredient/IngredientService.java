@@ -92,10 +92,8 @@ public class IngredientService {
         StringBuilder evidence = new StringBuilder();
         for (var hit : hits) {
             var entry = hit.chunk().source();
-            // 专业资料与博主观点都可检索，但必须在提示词中保留来源层级。
-            if (!List.of("rosacea-fragrance-free", "contact-dermatitis-irritant-allergic").contains(entry.id())
-                    && !"MiriamMibao".equals(entry.publisher())
-                    && !"EuropePMC".equals(entry.publisher())) continue;
+            // 具体产品分析只放入与当前问题直接有关的资料，避免把洁面或体外论文硬套到面膜。
+            if (!List.of("rosacea-fragrance-free", "contact-dermatitis-irritant-allergic").contains(entry.id())) continue;
             if (entry.id().equals("rosacea-fragrance-free") && !searchQuery.contains("香精")
                     && !searchQuery.contains("敏感")) continue;
             sources.putIfAbsent(entry.id(), new IngredientResponse.Source(entry.publisher(), entry.title(), entry.url(),
@@ -111,11 +109,11 @@ public class IngredientService {
                 + (request.concern() == null ? "" : request.concern()));
         String answer = null;
         String prompt = "你是认真、会讲人话的护肤成分讲解员。先用一两句直接回答用户，再自然地解释为什么，最后说仍不知道什么。不要堆砌小标题、机械罗列或说教。"
-                + "仅依据下面结构化输入和检索片段。AAD/NICE 是专业资料；EuropePMC 论文要说明实验条件，不能把培养结果外推为个人产品风险；MiriamMibao 是温唯文章观点，必须明确归属为作者观点。"
+                + "先依据真实成分名称和顺序回答；有直接相关的专业片段才引用。不要介绍检索失败、无关文章、作者观点或内部字段名。"
                 + "绝不推断准确浓度、疗效或个人致敏原因；没有证据就明确不知道。"
                 + "用户填写的‘脂皮’等词不是已核实诊断；不可仅凭脂肪醇、甘油三酯或霜体判断马拉色菌风险，"
                 + "不可直接下结论说面部不能用、身体适合用。部位和状态只能作为讨论条件。"
-                + "重要事实判断请在句中标明对应来源 ID；来源没有支持的结论不要写。"
+                + "用到专业资料时在对应句末标来源 ID，页面会在下方展示来源。没有资料支持的功效不能编造。"
                 + "只输出 JSON 对象，字段 answer 为中文自然语言字符串，不要 Markdown 代码围栏。"
                 + "不可自行增删过敏提示，Java 会另行显示。\n问题：" + request.question()
                 + "\n肤质（用户输入优先，否则已确认画像）：" + skinType
@@ -126,7 +124,7 @@ public class IngredientService {
                 + "\nJava 分层判断（UNKNOWN 表示不能判定个人适用）：" + write(assessment)
                 + "\n证据片段：" + evidence
                 + "\n固定局限：" + write(limits);
-        if (!apiKey.isBlank() && !sources.isEmpty() && alerts.isEmpty()) {
+        if (!apiKey.isBlank() && alerts.isEmpty()) {
             try {
                 var model = OpenAiChatModel.builder().apiKey(apiKey).baseUrl(baseUrl).modelName(modelName).build();
                 String raw = AiServices.create(Analyzer.class, model).answer(prompt).strip();
