@@ -95,6 +95,12 @@ class ChatControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
                 .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("自然堂雪域百合补水面膜")));
+        mvc.perform(post("/api/chat").contentType("application/json")
+                        .content("{\"userId\":\"follow-up-user\",\"sessionId\":\"session-a\","
+                                + "\"message\":\"我现在脸上泛红刺痛，这个面膜能用吗？\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("自然堂雪域百合补水面膜")));
     }
 
     @Test

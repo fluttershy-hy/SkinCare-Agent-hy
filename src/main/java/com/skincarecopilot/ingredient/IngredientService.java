@@ -1,7 +1,6 @@
 package com.skincarecopilot.ingredient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skincarecopilot.knowledge.KnowledgeService;
 import com.skincarecopilot.profile.ProfileService;
 import com.skincarecopilot.product.ProductIngredientStore;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -20,21 +19,26 @@ import org.slf4j.LoggerFactory;
 public class IngredientService {
     private static final Logger log = LoggerFactory.getLogger(IngredientService.class);
     private final ProfileService profiles;
-    private final KnowledgeService knowledge;
+    private final ProductAnalysisPlanner planner;
+    private final ProductEvidenceSelector evidenceSelector;
+    private final ProductAnswerValidator answerValidator;
     private final CreatorArticleService creatorArticles;
     private final ProductIngredientStore productStore;
     private final IngredientEvidenceService evidenceService;
     private final ObjectMapper json;
     private final String apiKey, baseUrl, modelName;
 
-    public IngredientService(ProfileService profiles, KnowledgeService knowledge,
+    public IngredientService(ProfileService profiles, ProductAnalysisPlanner planner,
+            ProductEvidenceSelector evidenceSelector, ProductAnswerValidator answerValidator,
             CreatorArticleService creatorArticles, ProductIngredientStore productStore,
             IngredientEvidenceService evidenceService, ObjectMapper json,
             @Value("${SKINCARE_LLM_API_KEY:}") String apiKey,
             @Value("${SKINCARE_LLM_BASE_URL:https://api.deepseek.com}") String baseUrl,
             @Value("${SKINCARE_LLM_MODEL:deepseek-flash}") String modelName) {
         this.profiles = profiles;
-        this.knowledge = knowledge;
+        this.planner = planner;
+        this.evidenceSelector = evidenceSelector;
+        this.answerValidator = answerValidator;
         this.creatorArticles = creatorArticles;
         this.productStore = productStore;
         this.evidenceService = evidenceService;
@@ -81,25 +85,18 @@ public class IngredientService {
                 alerts.add(new IngredientResponse.Alert(product.name(), allergen,
                         ingredient.raw(), ingredient.position()));
         }
-        var assessment = evidenceService.assess(products, alerts);
+        var plan = planner.plan(request, products);
+        var selected = evidenceSelector.select(plan, request, products);
+        var assessment = evidenceService.assess(products, alerts, plan, selected.entries().size());
 
-        // RAG 只供模型解释资料；命中片段和来源由 Java 选取，不接受模型自造引用。
-        String searchQuery = request.question() + " " + (request.concern() == null ? "" : request.concern());
-        if (products.stream().flatMap(p -> p.ingredients().stream())
-                .anyMatch(i -> i.normalized().equals("FRAGRANCE"))) searchQuery += " 香精 无香料 刺激 玫瑰痤疮";
-        var hits = knowledge.search(searchQuery.strip().substring(0, Math.min(500, searchQuery.strip().length())), 5).matches();
+        // 检索候选经过问题、成分和适用范围过滤后，才进入模型上下文。
         Map<String, IngredientResponse.Source> sources = new LinkedHashMap<>();
         StringBuilder evidence = new StringBuilder();
-        for (var hit : hits) {
-            var entry = hit.chunk().source();
-            // 具体产品分析只放入与当前问题直接有关的资料，避免把洁面或体外论文硬套到面膜。
-            if (!List.of("rosacea-fragrance-free", "contact-dermatitis-irritant-allergic").contains(entry.id())) continue;
-            if (entry.id().equals("rosacea-fragrance-free") && !searchQuery.contains("香精")
-                    && !searchQuery.contains("敏感")) continue;
+        for (var entry : selected.entries()) {
             sources.putIfAbsent(entry.id(), new IngredientResponse.Source(entry.publisher(), entry.title(), entry.url(),
                     entry.section(), entry.verifiedOn()));
             evidence.append("[来源 ").append(entry.id()).append(" · ").append(entry.publisher())
-                    .append("] ").append(hit.chunk().text()).append('\n');
+                    .append("] ").append(entry.text()).append('\n');
         }
         List<String> limits = List.of("成分表不提供准确浓度、配方工艺或实际使用效果；排序不能证明成分无效。",
                 "成分表及一般刺激资料不能诊断个人过敏；未知名称和别名库外的同义词可能无法匹配。",
@@ -115,14 +112,16 @@ public class IngredientService {
                 + "不可直接下结论说面部不能用、身体适合用。部位和状态只能作为讨论条件。"
                 + "用到专业资料时在对应句末标来源 ID，页面会在下方展示来源。没有资料支持的功效不能编造。"
                 + "只输出 JSON 对象，字段 answer 为中文自然语言字符串，不要 Markdown 代码围栏。"
+                + "Java 决策决定是否追问或暂停尝试；你只能解释已知信息，不得覆盖该决策。"
+                + "不要自己提出追问，Java 会在回答末尾附上最关键的问题。"
                 + "不可自行增删过敏提示，Java 会另行显示。\n问题：" + request.question()
                 + "\n肤质（用户输入优先，否则已确认画像）：" + skinType
-                + "\n使用部位：" + request.bodyArea() + "；当前状态：" + request.currentState()
-                + "；自述敏感：" + request.sensitive()
+                + "\n使用部位：" + plan.bodyArea() + "；当前状态：" + plan.currentState()
+                + "；自述敏感：" + plan.sensitive()
                 + "\n关注问题：" + request.concern() + "\n产品成分与顺序：" + write(products)
                 + "\n已确认过敏成分命中：" + write(alerts)
                 + "\nJava 分层判断（UNKNOWN 表示不能判定个人适用）：" + write(assessment)
-                + "\n证据片段：" + evidence
+                + "\n相关证据片段：" + evidence
                 + "\n固定局限：" + write(limits);
         if (!apiKey.isBlank() && alerts.isEmpty()) {
             try {
@@ -130,7 +129,7 @@ public class IngredientService {
                 String raw = AiServices.create(Analyzer.class, model).answer(prompt).strip();
                 var node = json.readTree(raw);
                 answer = node.path("answer").asText("").strip();
-                if (!node.isObject() || answer.isBlank() || answer.length() > 4000)
+                if (!node.isObject() || !answerValidator.valid(answer, sources.keySet()))
                     throw new IllegalStateException("模型未返回有效分析");
             } catch (Exception e) {
                 log.warn("ingredient model analysis failed: {}", e.getClass().getSimpleName());
@@ -155,6 +154,19 @@ public class IngredientService {
                     .append(" 项 ").append(a.matchedIngredient()).append("（对应已确认：")
                     .append(a.confirmedName()).append("）；");
             answer = warning + "请避免把这款产品视为适合自己，向专业人员核实。\n\n" + answer;
+        }
+        if (assessment.decision().equals("PAUSE_DURING_DISCOMFORT")) {
+            answer = "你提到现在正在泛红或不适，先不要仅凭成分表决定马上尝试这款新产品。"
+                    + "目前无法判断不适的原因。\n\n" + answer;
+        }
+        if (assessment.decision().equals("EVIDENCE_GAP")) {
+            answer = "目前没有检索到足以判断个人适用性的相关专业资料；以下只能解释成分表，"
+                    + "不能给这款产品下适合或不适合你的结论。\n\n" + answer;
+        }
+        if (assessment.decision().equals("ASK_CURRENT_STATE")) {
+            answer += "\n\n想进一步结合你的情况，先确认：" + assessment.nextQuestion();
+        } else if (assessment.decision().equals("PAUSE_DURING_DISCOMFORT")) {
+            answer += "\n\n" + assessment.nextQuestion();
         }
         String finalAnswer = answer;
         // 只展示模型实际引用的命中来源，避免无关检索结果冒充回答依据。

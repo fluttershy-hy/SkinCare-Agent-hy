@@ -17,7 +17,8 @@ class IngredientServiceTest {
     private final CreatorArticleService articles = mock(CreatorArticleService.class);
     private final ProductIngredientStore products = mock(ProductIngredientStore.class);
     private final IngredientEvidenceService evidence = new IngredientEvidenceService();
-    private final IngredientService service = new IngredientService(profiles, knowledge, articles, products, evidence,
+    private final IngredientService service = new IngredientService(profiles, new ProductAnalysisPlanner(),
+            new ProductEvidenceSelector(knowledge), new ProductAnswerValidator(), articles, products, evidence,
             new ObjectMapper(), "", "https://example.test", "unused");
 
     IngredientServiceTest() {
@@ -58,6 +59,20 @@ class IngredientServiceTest {
         var invalid = new IngredientRequest("demo", valid.first(), null, "油性", "保湿",
                 List.of(), false, "可以用吗？", "T区一定不能用", "稳定", true);
         assertThrows(IllegalArgumentException.class, () -> service.analyze(invalid));
+    }
+
+    @Test
+    void asksForMissingStateAndPausesWhenUserReportsCurrentDiscomfort() {
+        var product = new IngredientRequest.Product("示例面膜", "水、甘油、香精");
+        var unknown = service.analyze(new IngredientRequest("demo", product, null,
+                "敏感肌", "保湿", List.of(), false, "这款适合敏感肌吗？"));
+        assertEquals("ASK_CURRENT_STATE", unknown.assessment().decision());
+        assertTrue(unknown.answer().contains("现在皮肤稳定"));
+
+        var uncomfortable = service.analyze(new IngredientRequest("demo", product, null,
+                "敏感肌", "保湿", List.of(), false, "我现在脸上泛红刺痛，这款能用吗？"));
+        assertEquals("PAUSE_DURING_DISCOMFORT", uncomfortable.assessment().decision());
+        assertTrue(uncomfortable.answer().startsWith("你提到现在正在泛红或不适"));
     }
 
     @Test

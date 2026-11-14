@@ -22,7 +22,9 @@ public final class ProductQuestionDetector {
             var matcher = pattern.matcher(input);
             if (!matcher.find()) continue;
             String name = matcher.group(1).strip();
-            if (name.length() >= 6 && PRODUCT_TYPE.matcher(name).matches()) return Optional.of(name);
+            if (name.length() >= 6 && PRODUCT_TYPE.matcher(name).matches()
+                    && !name.matches(".*(?:这个|这款|那个|该)(?:面膜|面霜|乳液|精华)$"))
+                return Optional.of(name);
         }
         return Optional.empty();
     }

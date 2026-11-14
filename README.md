@@ -45,7 +45,7 @@ Java 确定性检查（已确认的过敏成分命中、来源完整性等）
 输出：结论与证据等级／关键成分／分部位建议／未知项／何时停用或就医
 ```
 
-**当前真实链路比目标链路短。** `POST /api/products/search` 定位名称匹配的网页候选；页面明确标注全成分时可提取候选列表，市场和 SKU 是可选核对项，详见[官网全成分提取说明](docs/official-product-ingredients.md)。`POST /api/ingredients/analyze` 可以解析取得或粘贴的 INCI，并对本次明确确认的过敏成分执行 Java 强制匹配。当前 `assessment.decision` 仅有 `AVOID_CONFIRMED_MATCH` 与 `UNKNOWN`，没有一般人群的“安全认证”或医学适用性评级。没有可靠完整成分表时，应返回信息不足，不从产品名字或搜索摘要猜测配方。
+**当前真实链路比目标链路短。** `POST /api/products/search` 定位名称匹配的网页候选；页面明确标注全成分时可提取候选列表，市场和 SKU 是可选核对项，详见[官网全成分提取说明](docs/official-product-ingredients.md)。`POST /api/ingredients/analyze` 可以解析取得或粘贴的 INCI，并对本次明确确认的过敏成分执行 Java 强制匹配。当前 `assessment.decision` 增加已确认成分命中、当前不适、缺少当前状态与证据缺口等分支；这些都不是一般人群的“安全认证”或医学适用性评级。没有可靠完整成分表时，应返回信息不足，不从产品名字或搜索摘要猜测配方。
 
 2026-11-09 已用真实 HTTP 请求从 CeraVe 美国官网 `Moisturizing Cream` 页面提取到 24 项成分；该来源现收录在服务端 `OfficialProductCatalog`，普通用户只填 `CeraVe Moisturizing Cream` 产品名即可尝试查询，不必自己配置域名、URL 或 SKU。页面 SKU `3606000537729` 只能标识商品，不能证明配方修订版本或中国大陆包装配方。请以实际包装为准，验证记录见上面的官网提取说明。
 
@@ -175,7 +175,7 @@ Day 6 后新增只读产品网页查询能力。在聊天框填写具体产品�
 
 `bash scripts/discover-literature.sh /tmp/skincare-literature-candidates.json` 批量检索 Europe PMC，并保存去重的文献元数据供人工审读。它不抓取全文、不生成个人风险评分，候选文献也不会自动进入 RAG。证据核查流程和当前访问状态见 [文献发现记录](docs/malassezia-literature.md)。
 
-用户勾选“这是该具体版本包装上的完整成分表”后，成分表会按用户 ID 保存到 H2 的 `user_product_ingredients`；以后在同一聊天窗口问同名产品，后端先读该用户保存的文本，再考虑联网搜索。记录只代表虚构用户自述，不是官方配方。成分分析响应的 `assessment.decision` 只有 `AVOID_CONFIRMED_MATCH`（本次已确认过敏成分名称命中）和 `UNKNOWN`（个人适用性未知）；`signals` 带来源和实验局限，不是致痘分数。云环境如设置 `HTTPS_PROXY`，应用启动时会配置 Java HTTP 客户端使用代理并使 localhost 直连；本机无该变量时维持默认网络行为。
+用户勾选“这是该具体版本包装上的完整成分表”后，成分表会按用户 ID 保存到 H2 的 `user_product_ingredients`；以后在同一聊天窗口问同名产品，后端先读该用户保存的文本，再考虑联网搜索。记录只代表虚构用户自述，不是官方配方。成分分析响应的 `assessment.decision` 可返回 `AVOID_CONFIRMED_MATCH`、`PAUSE_DURING_DISCOMFORT`、`ASK_CURRENT_STATE`、`EVIDENCE_GAP` 或 `EXPLAIN_WITH_LIMITS`；`signals` 带来源和实验局限，不是致痘分数。云环境如设置 `HTTPS_PROXY`，应用启动时会配置 Java HTTP 客户端使用代理并使 localhost 直连；本机无该变量时维持默认网络行为。
 
 “查看本用户已保存的成分表”可将记录载入第一款或第二款，再在原聊天窗口分析两款；也可删除本用户保存的记录。后端对应 `GET /api/products/saved/{userId}` 和 `DELETE /api/products/saved/{userId}?productName=...`。这些是虚构用户演示数据，当前项目仅以用户 ID 隔离记录，尚无登录认证，不能用于真实个人资料。
 
@@ -184,3 +184,7 @@ Day 6 后新增只读产品网页查询能力。在聊天框填写具体产品�
 首页仍由 Spring Boot 的 `static/index.html` 提供，无需单独启动前端构建服务。页面保留横向聊天、固定左侧导航、镜子档案、三套背景和 24 帧滴管动画。`static/css/app.css` 放视觉样式，`static/js/main.js` 负责聊天与成分分析，`api.js` 统一请求，`profile.js` 管理已确认画像，`theme.js` 管理主题与卷轴开场，`animation.js` 在真实请求期间循环播放滴管，`tools.js` 处理网页候选成分、已保存产品及知识片段检索。图片与帧文件在 `static/assets/`。
 
 输入成分表后，聊天会调用 `/api/ingredients/analyze`；未输入成分表时调用 `/api/chat`。左侧「常用入口」只会填入问题，不会生成演示回答。原型中的模拟等待已移除。浏览器刷新会开启新的内存会话；点击「新对话」也会更换会话 ID。保存画像必须勾选确认，聊天中提到的怀疑过敏不会自动写入画像。
+
+## 产品问答工作流
+
+当前已实现的规划、资料过滤、Java 分层决策、关键追问和输出校验见[产品问答工作流](docs/product-answer-workflow.md)。这是一条 Java 编排的有分支流程，不是多 Agent 或知识图谱；资料覆盖范围仍有限。

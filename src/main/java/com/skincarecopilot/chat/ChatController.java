@@ -88,11 +88,6 @@ public class ChatController {
             recentProducts.put(conversation, new RecentProduct(productName, request.message()));
             return productAnswer(request, productName);
         }
-        var namedProduct = ProductQuestionDetector.exactProductName(request.message());
-        if (namedProduct.isPresent()) {
-            recentProducts.put(conversation, new RecentProduct(namedProduct.get(), request.message()));
-            return productAnswer(request, namedProduct.get());
-        }
         RecentProduct previousProduct = recentProducts.get(conversation);
         if (PRODUCT_FOLLOW_UP.matcher(request.message()).find()) {
             if (previousProduct != null) {
@@ -115,6 +110,11 @@ public class ChatController {
             return ResponseEntity.ok(new ChatResponse("我可以联网查找具体产品页面和候选成分表。"
                     + "请提供产品全名；如果你刚开启了新会话，也请再发一次产品名。"
                     + "查到的网页成分仍需与你手中包装核对。", ChatRoute.PRODUCT_SEARCH, List.of()));
+        }
+        var namedProduct = ProductQuestionDetector.exactProductName(request.message());
+        if (namedProduct.isPresent()) {
+            recentProducts.put(conversation, new RecentProduct(namedProduct.get(), request.message()));
+            return productAnswer(request, namedProduct.get());
         }
         return ResponseEntity.ok(chatService.replyWithSources(
                 request.userId(), request.sessionId(), request.message().trim()));

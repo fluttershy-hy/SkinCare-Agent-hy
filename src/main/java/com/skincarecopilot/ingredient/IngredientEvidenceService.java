@@ -9,6 +9,12 @@ import org.springframework.stereotype.Service;
 public class IngredientEvidenceService {
     public Assessment assess(List<IngredientResponse.Product> products,
                              List<IngredientResponse.Alert> allergyAlerts) {
+        return assess(products, allergyAlerts, null, 0);
+    }
+
+    public Assessment assess(List<IngredientResponse.Product> products,
+                             List<IngredientResponse.Alert> allergyAlerts,
+                             ProductAnalysisPlanner.Plan plan, int relevantSources) {
         List<Signal> signals = new ArrayList<>();
         for (var product : products) for (var ingredient : product.ingredients()) {
             switch (ingredient.normalized()) {
@@ -23,15 +29,34 @@ public class IngredientEvidenceService {
                 default -> { }
             }
         }
-        return new Assessment(allergyAlerts.isEmpty() ? "UNKNOWN" : "AVOID_CONFIRMED_MATCH",
-                allergyAlerts.isEmpty() ? "缺少证据判断整款产品对个人是否适用。"
-                        : "与本次明确确认的过敏成分发生名称匹配；不要把该产品作为可用方案。",
+        String decision = "UNKNOWN";
+        String reason = "缺少证据判断整款产品对个人是否适用。";
+        String nextQuestion = "";
+        if (!allergyAlerts.isEmpty()) {
+            decision = "AVOID_CONFIRMED_MATCH";
+            reason = "与本次明确确认的过敏成分发生名称匹配；不要把该产品作为可用方案。";
+        } else if (plan != null && plan.currentState().equals("正在泛红或不适")) {
+            decision = "PAUSE_DURING_DISCOMFORT";
+            reason = "用户自述目前泛红或不适，不应仅凭成分表推荐现在尝试新产品。";
+            nextQuestion = "目前是哪个部位不适？是否在使用这款产品后才出现？";
+        } else if (plan != null && plan.suitabilityQuestion() && plan.currentState().equals("不确定")) {
+            decision = "ASK_CURRENT_STATE";
+            reason = "缺少当前皮肤状态，暂不能给个人适用建议。";
+            nextQuestion = "你准备把它用在什么部位？现在皮肤稳定，还是正在泛红、刺痛或破损？";
+        } else if (plan != null && plan.suitabilityQuestion() && relevantSources == 0) {
+            decision = "EVIDENCE_GAP";
+            reason = "没有检索到直接相关的专业资料，只能解释成分表，不能给出个人适用判断。";
+        } else if (plan != null) {
+            decision = "EXPLAIN_WITH_LIMITS";
+            reason = "可解释已识别的成分和相关资料，但不能保证产品功效或个人耐受。";
+        }
+        return new Assessment(decision, reason,
                 "未核实具体地区、用途和浓度，不能判定法规禁限用状态。",
-                List.copyOf(signals));
+                List.copyOf(signals), nextQuestion);
     }
 
     public record Signal(String product, String ingredient, String evidenceType, String observation,
                          String limitation, String sourceUrl) {}
     public record Assessment(String decision, String reason, String regulatoryStatus,
-                             List<Signal> signals) {}
+                             List<Signal> signals, String nextQuestion) {}
 }

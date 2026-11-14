@@ -12,5 +12,6 @@ class ProductQuestionDetectorTest {
                 "自然堂雪域百合补水面膜是否适合敏感肌").orElseThrow());
         assertTrue(ProductQuestionDetector.exactProductName("我可以用烟酰胺吗").isEmpty());
         assertTrue(ProductQuestionDetector.exactProductName("面霜适合我吗").isEmpty());
+        assertTrue(ProductQuestionDetector.exactProductName("我现在脸上泛红刺痛，这个面膜能用吗").isEmpty());
     }
 }
