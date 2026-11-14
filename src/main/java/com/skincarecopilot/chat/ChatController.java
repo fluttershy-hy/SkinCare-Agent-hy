@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -31,8 +32,13 @@ public class ChatController {
     private final MealPlanService meals;
     private final OfficialIngredientService officialIngredients;
     private final OfficialProductCatalog officialCatalog;
+    // 产品追问沿用当前用户和会话里的产品名；不能让模型凭聊天记忆猜测是否需要联网。
+    private final ConcurrentHashMap<ConversationId, RecentProduct> recentProducts = new ConcurrentHashMap<>();
     private static final Pattern POSSIBLE_PRODUCT_REACTION = Pattern.compile(
             "(?:可能|怀疑).{0,12}对(.{2,80}?)(?:过敏|不耐受|有反应)");
+    private static final Pattern PRODUCT_FOLLOW_UP = Pattern.compile(
+            "(?:这款|这个|该)(?:产品|面膜|面霜|乳液|精华)|(?:为什么|怎么)(?:没|没有)查到|(?:再|重新)(?:查|搜)|(?:它|这个)(?:的)?(?:成分|配方)");
+    private static final Pattern RETRY_QUERY = Pattern.compile("(?:为什么|怎么)(?:没|没有)查到|(?:再|重新)(?:查|搜)");
 
     public ChatController(ChatService chatService, ProductSearchService productSearch,
                           ProductIngredientStore savedProducts, IngredientService ingredients,
@@ -67,7 +73,9 @@ public class ChatController {
         if (UnsupportedMealRequest.matches(request.message())) {
             return ResponseEntity.ok(meals.plan(request.userId(), request.message().strip()));
         }
+        ConversationId conversation = new ConversationId(request.userId(), request.sessionId());
         if (request.productName() != null && !request.productName().isBlank()) {
+            recentProducts.put(conversation, new RecentProduct(request.productName().strip(), request.message()));
             return productAnswer(request, request.productName().strip());
         }
         Matcher product = POSSIBLE_PRODUCT_REACTION.matcher(request.message());
@@ -77,15 +85,42 @@ public class ChatController {
                 return ResponseEntity.ok(new ChatResponse("请提供包装上的具体产品全名；仅凭品牌名无法确定配方。"
                         + "成分表也不能单独证明你对哪个成分过敏。", ChatRoute.PRODUCT_SEARCH, List.of()));
             }
+            recentProducts.put(conversation, new RecentProduct(productName, request.message()));
             return productAnswer(request, productName);
         }
         var namedProduct = ProductQuestionDetector.exactProductName(request.message());
         if (namedProduct.isPresent()) {
+            recentProducts.put(conversation, new RecentProduct(namedProduct.get(), request.message()));
             return productAnswer(request, namedProduct.get());
+        }
+        RecentProduct previousProduct = recentProducts.get(conversation);
+        if (PRODUCT_FOLLOW_UP.matcher(request.message()).find()) {
+            if (previousProduct != null) {
+                if (RETRY_QUERY.matcher(request.message()).find()) {
+                    // 重新搜索时沿用原问题，避免模型把“为什么没查到”误当成用户贴了成分表。
+                    ChatRequest retry = new ChatRequest(request.userId(), request.sessionId(),
+                            previousProduct.question(), request.bodyArea(), request.currentState(),
+                            request.sensitive(), request.concern(), previousProduct.name(),
+                            request.confirmedIngredientAllergies(), request.allergiesConfirmed(),
+                            request.productMarket(), request.productVersion());
+                    var result = productAnswer(retry, previousProduct.name());
+                    var answer = result.getBody();
+                    if (answer != null && result.getStatusCode().is2xxSuccessful())
+                        return ResponseEntity.ok(new ChatResponse("我重新查询了“" + previousProduct.name()
+                                + "”的产品页面。\n" + answer.answer(), answer.route(), answer.sources()));
+                    return result;
+                }
+                return productAnswer(request, previousProduct.name());
+            }
+            return ResponseEntity.ok(new ChatResponse("我可以联网查找具体产品页面和候选成分表。"
+                    + "请提供产品全名；如果你刚开启了新会话，也请再发一次产品名。"
+                    + "查到的网页成分仍需与你手中包装核对。", ChatRoute.PRODUCT_SEARCH, List.of()));
         }
         return ResponseEntity.ok(chatService.replyWithSources(
                 request.userId(), request.sessionId(), request.message().trim()));
     }
+
+    private record RecentProduct(String name, String question) {}
 
     private ResponseEntity<ChatResponse> productAnswer(ChatRequest request, String productName) {
         if (productName == null || productName.isBlank() || productName.length() > 120

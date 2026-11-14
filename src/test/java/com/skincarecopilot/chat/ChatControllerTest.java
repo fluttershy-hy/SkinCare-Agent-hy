@@ -83,6 +83,21 @@ class ChatControllerTest {
     }
 
     @Test
+    void productFollowUpSearchesAgainWithinSameUserSession() throws Exception {
+        String first = "{\"userId\":\"follow-up-user\",\"sessionId\":\"session-a\","
+                + "\"message\":\"自然堂雪域百合补水面膜是否适合敏感肌\"}";
+        mvc.perform(post("/api/chat").contentType("application/json").content(first))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"));
+        mvc.perform(post("/api/chat").contentType("application/json")
+                        .content("{\"userId\":\"follow-up-user\",\"sessionId\":\"session-a\","
+                                + "\"message\":\"你为什么没查到这个面膜的成分？\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route").value("PRODUCT_SEARCH"))
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("自然堂雪域百合补水面膜")));
+    }
+
+    @Test
     void confirmedLocalProductIsReadBeforeSearchAndAllergyIsEnforced() throws Exception {
         savedProducts.saveUserConfirmed("demo-saved", "虚构保湿面霜", "水、Parfum、甘油");
         mvc.perform(post("/api/chat").contentType("application/json")
