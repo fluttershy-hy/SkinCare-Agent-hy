@@ -1,0 +1,106 @@
+{
+  "book": "Williams内分泌学（原书第14版）",
+  "receivedOn": "2026-11-17",
+  "files": [
+    {
+      "volume": 1,
+      "uploadedName": "Williams内分泌学（原书第14版）1 (Shlomo Melmed (施罗莫·梅尔梅德)) (z-library.sk, 1lib.sk, z-lib.sk)-001-200.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-01.pdf",
+      "bytes": 21819544,
+      "pages": 200,
+      "sha256": "b48813e3beaade3f89b3ed345728a0b4c189e0b11fa7b757c6dd6b6fb68a620a",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 2,
+      "uploadedName": "Williams内分泌学（原书第14版）2 (Shlomo Melmed (施罗莫·梅尔梅德)) (z-library.sk, 1lib.sk, z-lib.sk)-201-400.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-02.pdf",
+      "bytes": 23195949,
+      "pages": 200,
+      "sha256": "69dfd9365b6ff4f1bb8bafb63a66a0796e0484f5a3393477e057299c175d3ca5",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 3,
+      "uploadedName": "Williams内分泌学（原书第14版）3 (Shlomo Melmed (施罗莫·梅尔梅德)) (z-library.sk, 1lib.sk, z-lib.sk)-401-600.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-03.pdf",
+      "bytes": 24034912,
+      "pages": 200,
+      "sha256": "cf87838786377a3bed05dd9365c8b48f9cab7f31952c5aaa04236dc6e5295fa8",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 4,
+      "uploadedName": "Williams内分泌学（原书第14版）4 (Shlomo Melmed (施罗莫·梅尔梅德)) (z-library.sk, 1lib.sk, z-lib.sk)-601-800.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-04.pdf",
+      "bytes": 26396639,
+      "pages": 200,
+      "sha256": "71eb2f2d02d56456900335018461ed4c05d5d9c90202043bc99b5666d838c1a1",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 5,
+      "uploadedName": "Williams内分泌学（原书第14版）5 (Shlomo Melmed (施罗莫·梅尔梅德)) (z-library.sk, 1lib.sk, z-lib.sk)-801-834.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-05.pdf",
+      "bytes": 4248907,
+      "pages": 34,
+      "sha256": "05492bb6a9a254b8577162b3bf5a73d796be33b5e5fb75ae61665ef644d3d7eb",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 6,
+      "uploadedName": "Williams内分泌学（原书第14版）6 ([英]施罗莫·梅尔梅德（Shlomo Melmed）等著) (z-library.sk, 1lib.sk, z-lib.sk)-001-200.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-06.pdf",
+      "bytes": 20151437,
+      "pages": 200,
+      "sha256": "590a2a2cad95139b8a6e167c8b47b3515897dbccd721c4b34f570b6b41456613",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 7,
+      "uploadedName": "Williams内分泌学（原书第14版）7 ([英]施罗莫·梅尔梅德（Shlomo Melmed）等著) (z-library.sk, 1lib.sk, z-lib.sk)-201-400.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-07.pdf",
+      "bytes": 21552694,
+      "pages": 200,
+      "sha256": "7be9b8884cb4a146e750deeda9290f324077c753efb2314e4b29e2a488e32895",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 8,
+      "uploadedName": "Williams内分泌学（原书第14版）8 ([英]施罗莫·梅尔梅德（Shlomo Melmed）等著) (z-library.sk, 1lib.sk, z-lib.sk)-401-600.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-08.pdf",
+      "bytes": 21646463,
+      "pages": 200,
+      "sha256": "a4aea563d0a0060608fed8179220453cc7ed333e84a491b7cfcf6b4b4821fcdb",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 9,
+      "uploadedName": "Williams内分泌学（原书第14版）9 ([英]施罗莫·梅尔梅德（Shlomo Melmed）等著) (z-library.sk, 1lib.sk, z-lib.sk)-601-800.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-09.pdf",
+      "bytes": 21095942,
+      "pages": 200,
+      "sha256": "2d409db252902c4e37d42aa710c9c395b53b700ab4226a655a1882fe21e8f1c1",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    },
+    {
+      "volume": 10,
+      "uploadedName": "Williams内分泌学（原书第14版）10 ([英]施罗莫·梅尔梅德（Shlomo Melmed）等著) (z-library.sk, 1lib.sk, z-lib.sk)-801-942.pdf",
+      "localPath": "data/book-sources/williams-endocrinology-14/volume-10.pdf",
+      "bytes": 14966693,
+      "pages": 142,
+      "sha256": "bac07b395e1b253f2200f0a9cf0f9517e9dd25574f829b6530f9d9d537996103",
+      "textLayer": "none detected in first 3 pages",
+      "knowledgeImported": false
+    }
+  ]
+}
