@@ -28,6 +28,18 @@ class KnowledgeImporterTest {
     }
 
     @Test
+    void importsOnlyLocatedBookNotesWithoutCopyingTheBook() throws Exception {
+        var book = new KnowledgeEntry("book-fixture", "Book", "测试书籍", "book:9787122323750",
+                "第四章 第七节", "2026-11-17", "简短摘录", "经人工整理的短条目。",
+                "BOOK", "作者", "出版社", "2018年版", "9787122323750", "EPUB/xhtml/Chapter21.xhtml");
+        assertEquals(List.of(book), read(List.of(book)));
+        var bad = new KnowledgeEntry(book.id(), book.publisher(), book.title(), "book:9787122323751",
+                book.section(), book.verifiedOn(), book.originalExcerpt(), book.text(),
+                book.sourceType(), book.bookAuthor(), book.bookPublisher(), book.edition(), book.isbn(), book.locator());
+        assertThrows(IllegalArgumentException.class, () -> read(List.of(bad)));
+    }
+
+    @Test
     void refusesDuplicateIdsAndUntrustedOrMismatchedSourceUrls() {
         var entry = fixture("fixture", "合成条目");
         assertThrows(IllegalArgumentException.class, () -> read(List.of(entry, entry)));

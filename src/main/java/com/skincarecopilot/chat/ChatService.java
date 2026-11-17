@@ -1,6 +1,7 @@
 package com.skincarecopilot.chat;
 
 import com.skincarecopilot.knowledge.KnowledgeService;
+import com.skincarecopilot.knowledge.KnowledgeRelevanceFilter;
 import com.skincarecopilot.profile.ProfileService;
 import com.skincarecopilot.profile.ProfileTools;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -27,6 +28,7 @@ public class ChatService {
     private final ProfileService profiles;
     private final ChatMemoryRegistry memories;
     private final KnowledgeService knowledge;
+    private final KnowledgeRelevanceFilter relevance;
     private final ChatRouter router;
     private final ConcurrentHashMap<ConversationId, String> lastGroundedQuestion = new ConcurrentHashMap<>();
 
@@ -35,20 +37,21 @@ public class ChatService {
                        @Value("${SKINCARE_LLM_BASE_URL:https://api.deepseek.com}") String baseUrl,
                        @Value("${SKINCARE_LLM_MODEL:deepseek-flash}") String modelName,
                        ProfileService profiles, ChatMemoryRegistry memories,
-                       KnowledgeService knowledge, ChatRouter router) {
+                       KnowledgeService knowledge, ChatRouter router, KnowledgeRelevanceFilter relevance) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.modelName = modelName;
         this.profiles = profiles;
         this.memories = memories;
         this.knowledge = knowledge;
+        this.relevance = relevance;
         this.router = router;
     }
 
     // Retains the existing package-level test entry point for Day 3 memory isolation.
     ChatService(String apiKey, String baseUrl, String modelName, ProfileService profiles,
                 ChatMemoryRegistry memories) {
-        this(apiKey, baseUrl, modelName, profiles, memories, null, new ChatRouter());
+        this(apiKey, baseUrl, modelName, profiles, memories, null, new ChatRouter(), new KnowledgeRelevanceFilter());
     }
 
     public String reply(String userId, String sessionId, String message) {
@@ -70,13 +73,14 @@ public class ChatService {
         if (route == ChatRoute.KNOWLEDGE || route == ChatRoute.COMBINED) {
             if (knowledge == null) throw new IllegalStateException("知识检索服务未配置");
             var result = knowledge.search(groundedFollowUp ? previousQuestion + "。" + message : message, 3);
-            if (result.matches().isEmpty()) {
+            var relevantHits = relevance.relevant(groundedFollowUp ? previousQuestion + "。" + message : message, result.matches());
+            if (relevantHits.isEmpty()) {
                 // Do not ask the model to invent an answer or a citation.
                 return new ChatResponse(INSUFFICIENT, route, List.of());
             }
             var unique = new LinkedHashMap<String, ChatResponse.Source>();
-            var context = new StringBuilder("先直接回答问题，只使用真正相关的片段，不要逐条复述检索结果。专业资料可用于一般知识解释；博主文章只能作为通俗解释和观点，不能冒充临床结论；体外论文不能外推到人体或成品。正文自然解释，不要反复写作者姓名或‘作者认为’；用到的知识点在句末标注来源编号，来源链接由页面在回答下方展示。无相关依据时简洁说明缺什么，不要用无关片段凑答案。\n");
-            for (var hit : result.matches()) {
+            var context = new StringBuilder("先直接回答问题，只使用真正相关的片段，不要逐条复述检索结果。AAD/NICE 可用于其适用人群内的一般知识；Book 是带章节定位的书籍解释，不等同于最新临床指南；博主文章只能作为通俗解释和观点；体外论文不能外推到人体或成品。正文自然解释，不要反复报作者姓名；用到的知识点在句末标注来源编号，来源信息由页面在回答下方展示。无相关依据时简洁说明缺什么，不要用无关片段凑答案。\n");
+            for (var hit : relevantHits) {
                 var chunk = hit.chunk();
                 var source = chunk.source();
                 unique.putIfAbsent(source.id(), new ChatResponse.Source(source.id(), source.publisher(),

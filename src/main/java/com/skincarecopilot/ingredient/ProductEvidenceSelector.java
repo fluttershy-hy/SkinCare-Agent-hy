@@ -21,6 +21,8 @@ public class ProductEvidenceSelector {
         queries.add(trim(issue + " " + request.question()));
         if (plan.sensitive() || plan.currentState().equals("正在泛红或不适"))
             queries.add("接触性皮炎 刺激 过敏 泛红 敏感 皮肤");
+        if (plan.sensitive() || issue.matches(".*(?:干燥|保湿|屏障).*"))
+            queries.add("皮肤屏障 角质层 脂质 敏感 干燥");
         if (plan.hasFragrance() && plan.sensitive())
             queries.add("玫瑰痤疮 易受刺激皮肤 香精 无香料");
         if (plan.hasPalmiticAcid() && (issue.contains("马拉色菌") || issue.contains("脂溢性皮炎")))
@@ -42,6 +44,18 @@ public class ProductEvidenceSelector {
         if (id.equals("rosacea-fragrance-free")) return plan.hasFragrance() && plan.sensitive();
         if (id.startsWith("malassezia-"))
             return plan.hasPalmiticAcid() && plan.concern().matches(".*(?:马拉色菌|脂溢性皮炎).*" );
+        if (id.startsWith("book-skin-")) {
+            boolean sensitive = plan.sensitive() || request.question().matches(".*(?:刺激|过敏|泛红).*" );
+            return switch (id) {
+                case "book-skin-sensitive-distinction", "book-skin-sensitive-symptoms" -> sensitive;
+                case "book-skin-barrier", "book-skin-dryness-lipids" ->
+                    sensitive || plan.concern().matches(".*(?:干燥|保湿|屏障).*" );
+                case "book-skin-acne-mechanisms" -> plan.concern().matches(".*(?:痤疮|痘|粉刺).*" );
+                case "book-skin-structure" -> request.question().contains("表皮")
+                    || request.question().contains("真皮");
+                default -> false;
+            };
+        }
         // 博主观点仅在问题明确涉及同一主题时进入上下文，不按向量相似度硬套。
         if (id.startsWith("miriam-")) {
             String text = entry.title() + " " + entry.text();

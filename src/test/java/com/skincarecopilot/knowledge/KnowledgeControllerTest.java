@@ -21,9 +21,19 @@ class KnowledgeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.model").value("bge-small-zh-v1.5-q"))
                 .andExpect(jsonPath("$.dimensions").value(512))
-                .andExpect(jsonPath("$.entryCount").value(22))
-                .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(22)))
+                .andExpect(jsonPath("$.entryCount").value(30))
+                .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(30)))
                 .andExpect(jsonPath("$.entries").isArray());
+    }
+
+    @Test
+    void bookCatalogKeepsEditionIsbnAndChapterLocator() throws Exception {
+        mvc.perform(get("/api/knowledge/sources"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entries[?(@.id == 'book-skin-sensitive-distinction')].isbn")
+                        .value("9787122323750"))
+                .andExpect(jsonPath("$.entries[?(@.id == 'book-skin-sensitive-distinction')].locator")
+                        .value("EPUB/xhtml/Chapter21.xhtml"));
     }
 
     @Test

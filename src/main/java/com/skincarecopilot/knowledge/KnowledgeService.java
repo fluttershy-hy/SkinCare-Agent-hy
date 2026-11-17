@@ -39,7 +39,14 @@ public class KnowledgeService {
 
     private static List<KnowledgeEntry> loadEntries(ObjectMapper json) throws IOException {
         try (InputStream input = new ClassPathResource("knowledge/entries.json").getInputStream()) {
-            return KnowledgeImporter.read(json, input);
+            var web = KnowledgeImporter.read(json, input);
+            try (InputStream books = new ClassPathResource("knowledge/books.json").getInputStream()) {
+                var combined = new java.util.ArrayList<>(web);
+                combined.addAll(KnowledgeImporter.read(json, books));
+                if (combined.stream().map(KnowledgeEntry::id).distinct().count() != combined.size())
+                    throw new IllegalArgumentException("网页和书籍知识条目 ID 重复");
+                return List.copyOf(combined);
+            }
         }
     }
 

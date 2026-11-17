@@ -34,7 +34,7 @@ class ChatRoutingIntegrationTest {
             when(knowledge.search(anyString(), eq(3))).thenReturn(
                     new KnowledgeService.SearchResult("question", KnowledgeService.MODEL, .75, List.of(hit)));
             ChatService service = new ChatService("fake-key", endpoint(server), "fake-model",
-                    mock(ProfileService.class), new ChatMemoryRegistry(), knowledge, new ChatRouter());
+                    mock(ProfileService.class), new ChatMemoryRegistry(), knowledge, new ChatRouter(), new com.skincarecopilot.knowledge.KnowledgeRelevanceFilter());
             ChatResponse response = service.replyWithSources("demo-user", "session-1", "玫瑰痤疮有什么诱因");
             assertEquals(ChatRoute.KNOWLEDGE, response.route());
             assertEquals("测试回答", response.answer());
@@ -49,7 +49,7 @@ class ChatRoutingIntegrationTest {
             // A different conversation never inherits the previous question or sources.
             assertThrows(ModelNotConfiguredException.class, () -> new ChatService("", endpoint(server),
                     "fake-model", mock(ProfileService.class), new ChatMemoryRegistry(), knowledge,
-                    new ChatRouter()).replyWithSources("demo-user", "session-2", "请结合我的情况给点建议"));
+                    new ChatRouter(), new com.skincarecopilot.knowledge.KnowledgeRelevanceFilter()).replyWithSources("demo-user", "session-2", "请结合我的情况给点建议"));
         } finally { server.stop(0); }
     }
 
@@ -59,7 +59,7 @@ class ChatRoutingIntegrationTest {
         when(knowledge.search(anyString(), eq(3))).thenReturn(
                 new KnowledgeService.SearchResult("question", KnowledgeService.MODEL, .75, List.of()));
         ChatService service = new ChatService("", "http://127.0.0.1:1/v1", "fake-model",
-                mock(ProfileService.class), new ChatMemoryRegistry(), knowledge, new ChatRouter());
+                mock(ProfileService.class), new ChatMemoryRegistry(), knowledge, new ChatRouter(), new com.skincarecopilot.knowledge.KnowledgeRelevanceFilter());
         ChatResponse response = service.replyWithSources("demo-user", "session-1", "烟酰胺能祛痘吗");
         assertEquals(ChatRoute.KNOWLEDGE, response.route());
         assertTrue(response.answer().contains("资料不足"));

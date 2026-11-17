@@ -37,6 +37,17 @@ public final class KnowledgeImporter {
                 throw new IllegalArgumentException("核实日期不能在未来");
             }
             URI uri = URI.create(entry.url());
+            if ("BOOK".equals(entry.sourceType())) {
+                if (!"Book".equals(entry.publisher()) || !"book".equals(uri.getScheme())
+                        || entry.isbn() == null || !entry.isbn().matches("[0-9]{13}")
+                        || !entry.isbn().equals(uri.getSchemeSpecificPart())
+                        || !filled(entry.bookAuthor()) || !filled(entry.bookPublisher())
+                        || !filled(entry.edition()) || !filled(entry.locator())
+                        || entry.originalExcerpt().length() > 180) {
+                    throw new IllegalArgumentException("书籍条目需要 ISBN、版本、章节定位和简短原文摘录");
+                }
+                continue;
+            }
             String expectedHost = switch (entry.publisher()) {
                 case "AAD" -> "www.aad.org";
                 case "NICE" -> "www.nice.org.uk";

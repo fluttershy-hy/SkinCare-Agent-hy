@@ -58,6 +58,18 @@ class ProductAnalysisWorkflowTest {
         verify(knowledge, atLeast(2)).search(anyString(), eq(5));
     }
 
+    @Test void relevantBookConceptCanJoinProfessionalSourceWithoutBecomingProductProof() {
+        KnowledgeService knowledge = mock(KnowledgeService.class);
+        var book = entry("book-skin-sensitive-distinction", "Book", "敏感皮肤不等于确认过敏");
+        when(knowledge.search(anyString(), eq(5))).thenReturn(new KnowledgeService.SearchResult(
+                "query", "test", .75, List.of(hit(book))));
+        var selected = new ProductEvidenceSelector(knowledge).select(
+                planner.plan(request("这款面膜适合敏感肌吗", null), products),
+                request("这款面膜适合敏感肌吗", null), products);
+        assertEquals(List.of("book-skin-sensitive-distinction"),
+                selected.entries().stream().map(KnowledgeEntry::id).toList());
+    }
+
     private KnowledgeEntry entry(String id, String publisher, String text) {
         return new KnowledgeEntry(id, publisher, id, "https://example.org/" + id,
                 "section", "2026-11-14", text, text);
