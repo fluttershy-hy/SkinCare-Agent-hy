@@ -1,0 +1,32 @@
+{
+  "receivedOn": "2026-11-18",
+  "files": [
+    {
+      "book": "揭发女明星：美容大王 2",
+      "uploadedName": "大S徐熙媛 揭发女明星 美容大王 2 (徐熙媛著) (z-library.sk, 1lib.sk, z-lib.sk)-001-100-001-050.pdf",
+      "localPath": "data/book-sources/beauty-king-2/001-050.pdf",
+      "bytes": 19900563,
+      "pages": 50,
+      "sha256": "7c5e2a7df9bd3125e4e73064f189af910ee25b866eac3fac91dea546fa3e5692",
+      "knowledgeImported": false
+    },
+    {
+      "book": "揭发女明星：美容大王 2",
+      "uploadedName": "大S徐熙媛 揭发女明星 美容大王 2 (徐熙媛著) (z-library.sk, 1lib.sk, z-lib.sk)-001-100-051-100.pdf",
+      "localPath": "data/book-sources/beauty-king-2/051-100.pdf",
+      "bytes": 21474239,
+      "pages": 50,
+      "sha256": "9b5501cbbd25710d7fba0e1f63af476f271a972a51cc00951d21ace43ca27c37",
+      "knowledgeImported": false
+    },
+    {
+      "book": "揭发女明星：美容大王 2",
+      "uploadedName": "大S徐熙媛 揭发女明星 美容大王 2 (徐熙媛著) (z-library.sk, 1lib.sk, z-lib.sk)-101-147-01-47.pdf",
+      "localPath": "data/book-sources/beauty-king-2/101-147-reupload.pdf",
+      "bytes": 17022775,
+      "pages": 47,
+      "sha256": "72b76905debd00da6c2865d30aee1308afe535aac9dda7d44a9279e09dba4031",
+      "knowledgeImported": false
+    }
+  ]
+}
