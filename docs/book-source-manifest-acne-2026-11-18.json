@@ -1,0 +1,150 @@
+{
+  "book": "Plewig & Kligman 痤疮与玫瑰痤疮 第4版",
+  "receivedOn": "2026-11-18",
+  "files": [
+    {
+      "range": "001-025",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-001-025.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/001-025.pdf",
+      "bytes": 14278511,
+      "pages": 25,
+      "sha256": "1f863d9e01eb213b1720cb5b2e6c659e1bc0caa5934f7993cf1a08529500d8af",
+      "knowledgeImported": false
+    },
+    {
+      "range": "026-050",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-026-050.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/026-050.pdf",
+      "bytes": 30439312,
+      "pages": 25,
+      "sha256": "300da53498b53a6e89f4fc90bbcfd0c8e473fa7ef2c7cdaeca1673e460db7f41",
+      "knowledgeImported": false
+    },
+    {
+      "range": "051-075",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-051-075.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/051-075.pdf",
+      "bytes": 31977787,
+      "pages": 25,
+      "sha256": "205eadeea0a5ae311b649b99d14e3d903b2e86b2e0cc41c35dc0d73efc227fbb",
+      "knowledgeImported": false
+    },
+    {
+      "range": "076-100",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-076-100.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/076-100.pdf",
+      "bytes": 32769635,
+      "pages": 25,
+      "sha256": "af52031e3d39881f15631da58d405158d60e5051ea37798abf23f606430706df",
+      "knowledgeImported": false
+    },
+    {
+      "range": "101-125",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-101-125.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/101-125.pdf",
+      "bytes": 30976108,
+      "pages": 25,
+      "sha256": "5767c4a46a264a3da089208a0fcf2b792c1bfabbdd257c98eb63d06bfaa84990",
+      "knowledgeImported": false
+    },
+    {
+      "range": "126-150",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-126-150.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/126-150.pdf",
+      "bytes": 31076578,
+      "pages": 25,
+      "sha256": "9a3c59d8562cce1b48fc14b66da945d0287f10a5c05ef9a697dd7a3204de3f72",
+      "knowledgeImported": false
+    },
+    {
+      "range": "151-175",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-151-175.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/151-175.pdf",
+      "bytes": 31266544,
+      "pages": 25,
+      "sha256": "7b26e5f6d36a616b0d789918cab1ae52c2e38a03f2eb001145129fae797804b3",
+      "knowledgeImported": false
+    },
+    {
+      "range": "176-200",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-176-200.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/176-200.pdf",
+      "bytes": 29227607,
+      "pages": 25,
+      "sha256": "5ec1ed9840bcd3c87e387c0d3c0358f3f05533c27cb8440434d94a67f20b59c6",
+      "knowledgeImported": true
+    },
+    {
+      "range": "201-225",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-201-225.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/201-225.pdf",
+      "bytes": 30848669,
+      "pages": 25,
+      "sha256": "95b5364115dc10a52ebdd41ffe3f152da90531f34e72463ea1b2e14d9cdc4bd0",
+      "knowledgeImported": false
+    },
+    {
+      "range": "226-250",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-226-250.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/226-250.pdf",
+      "bytes": 30171045,
+      "pages": 25,
+      "sha256": "d828cf4cb0c4e37513b13fa5d29725f32b4ee72b242c519f9d36b1543d3fdf11",
+      "knowledgeImported": false
+    },
+    {
+      "range": "251-275",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-251-275.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/251-275.pdf",
+      "bytes": 30189584,
+      "pages": 25,
+      "sha256": "943bdc3435f5a8b0c5b84c7dd4b1eea93bf88f8af3fd64cdbf9a2c63c184d0c0",
+      "knowledgeImported": false
+    },
+    {
+      "range": "276-300",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-276-300.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/276-300.pdf",
+      "bytes": 30295998,
+      "pages": 25,
+      "sha256": "839bf6eaa9db0f54274d5cb3caf59d054ee4fb8b9525cbe79ace6885238abb96",
+      "knowledgeImported": false
+    },
+    {
+      "range": "301-325",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-301-325.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/301-325.pdf",
+      "bytes": 29080919,
+      "pages": 25,
+      "sha256": "07a9269f5f43a3a8612d812e4503e0c1a56da165e6473cdaebe6b6ebe5126b68",
+      "knowledgeImported": true
+    },
+    {
+      "range": "326-350",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-326-350.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/326-350.pdf",
+      "bytes": 28268614,
+      "pages": 25,
+      "sha256": "728c357187d8584a21dff7f6a1bb9519406036251af013e1be6115c737804123",
+      "knowledgeImported": false
+    },
+    {
+      "range": "351-375",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-351-375.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/351-375.pdf",
+      "bytes": 29220686,
+      "pages": 25,
+      "sha256": "5b5a1f562ca67177da633924b9ac70c6df2c2815eb37da85dc42c9c09fee7601",
+      "knowledgeImported": false
+    },
+    {
+      "range": "376-392",
+      "uploadedName": "C  痤疮与玫瑰痤疮 第4版_丛林，廖勇，田艳丽主译2021年（彩图）55-376-392.pdf",
+      "localPath": "data/book-sources/acne-and-rosacea-4/376-392.pdf",
+      "bytes": 15525482,
+      "pages": 17,
+      "sha256": "61c8fad394e3144fb9e18deb7c8da1abdf98e9699971f5f3c4a6f888910d4295",
+      "knowledgeImported": false
+    }
+  ]
+}

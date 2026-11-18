@@ -21,8 +21,8 @@ class KnowledgeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.model").value("bge-small-zh-v1.5-q"))
                 .andExpect(jsonPath("$.dimensions").value(512))
-                .andExpect(jsonPath("$.entryCount").value(34))
-                .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(34)))
+                .andExpect(jsonPath("$.entryCount").value(38))
+                .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(38)))
                 .andExpect(jsonPath("$.entries").isArray());
     }
 
