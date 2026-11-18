@@ -1,0 +1,125 @@
+{
+  "receivedOn": "2026-11-18",
+  "files": [
+    {
+      "book": "美容大王 2",
+      "uploadedName": "大S徐熙媛 揭发女明星 美容大王 2 (徐熙媛著) (z-library.sk, 1lib.sk, z-lib.sk)-101-147.pdf",
+      "localPath": "data/book-sources/beauty-king-2/101-147.pdf",
+      "bytes": 17022809,
+      "pages": 47,
+      "sha256": "245781bfc51b83f48cbb1014c96652de67166223fa89bc4ebe14361259533b17",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "护肤全书",
+      "uploadedName": "护肤全书 外版书 (（日）庆田朋子著；吴梦迪译, Keida Tomoko, 庆田朋子 (女)) (z-library.sk, 1lib.sk, z-lib.sk)-001-100.pdf",
+      "localPath": "data/book-sources/complete-skin-care/001-100.pdf",
+      "bytes": 11792498,
+      "pages": 100,
+      "sha256": "429ac6b227dd5eb7b83de00db20ba6b3f508d4a93245602763ffe2d2f90c421d",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "护肤全书",
+      "uploadedName": "护肤全书 外版书 (（日）庆田朋子著；吴梦迪译, Keida Tomoko, 庆田朋子 (女)) (z-library.sk, 1lib.sk, z-lib.sk)-101-200.pdf",
+      "localPath": "data/book-sources/complete-skin-care/101-200.pdf",
+      "bytes": 11783684,
+      "pages": 100,
+      "sha256": "75f957b5b99220c2e954fb76f17423f481d5399a84ba0ee92cf920682b5a9685",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "护肤全书",
+      "uploadedName": "护肤全书 外版书 (（日）庆田朋子著；吴梦迪译, Keida Tomoko, 庆田朋子 (女)) (z-library.sk, 1lib.sk, z-lib.sk)-201-297.pdf",
+      "localPath": "data/book-sources/complete-skin-care/201-297.pdf",
+      "bytes": 11570754,
+      "pages": 97,
+      "sha256": "7cd56667fc80e6a39c8f18ef68a567aae6a23cefd6a37ce78587507bdb8a31d1",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "实用美容皮肤科学",
+      "uploadedName": "Shi Yong Mei Rong Pi Fu Ke Xue - Wei Zhi-001-100.pdf",
+      "localPath": "data/book-sources/practical-cosmetic-dermatology/001-100.pdf",
+      "bytes": 23800253,
+      "pages": 100,
+      "sha256": "82f53aac5ba4deb7027170e9c5a231d0286511d44948bfd85ad61d14006a0c7e",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "实用美容皮肤科学",
+      "uploadedName": "Shi Yong Mei Rong Pi Fu Ke Xue - Wei Zhi-101-200.pdf",
+      "localPath": "data/book-sources/practical-cosmetic-dermatology/101-200.pdf",
+      "bytes": 23915782,
+      "pages": 100,
+      "sha256": "f7f1f5ff0ed27427c4e96bae3eedb31e1901d76a33b4aa5c9e7ffa2347e8d22e",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": true
+    },
+    {
+      "book": "实用美容皮肤科学",
+      "uploadedName": "Shi Yong Mei Rong Pi Fu Ke Xue - Wei Zhi-201-300.pdf",
+      "localPath": "data/book-sources/practical-cosmetic-dermatology/201-300.pdf",
+      "bytes": 23959563,
+      "pages": 100,
+      "sha256": "b65e12c4133e33eda850b534a14e3aa460430ff94e98162e5c77a0630d082505",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "实用美容皮肤科学",
+      "uploadedName": "Shi Yong Mei Rong Pi Fu Ke Xue - Wei Zhi-301-400.pdf",
+      "localPath": "data/book-sources/practical-cosmetic-dermatology/301-400.pdf",
+      "bytes": 23546421,
+      "pages": 100,
+      "sha256": "4f743ed6b153e7d74275b5f090c6e1bdaff7eae8dc9be996c587561a414eeab9",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "实用美容皮肤科学",
+      "uploadedName": "Shi Yong Mei Rong Pi Fu Ke Xue - Wei Zhi-401-493.pdf",
+      "localPath": "data/book-sources/practical-cosmetic-dermatology/401-493.pdf",
+      "bytes": 21112265,
+      "pages": 93,
+      "sha256": "23af3038c75de3747b51debf0cdf24fe74284d1b12d48aa51c1e6f3b35f7e28d",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "走近精准美白——化妆品科学美白机理与技术",
+      "uploadedName": "走近精准美白——化妆品科学美白机理与技术 (陈庆生,胡根华,林梦雅,潘志) (z-library.sk, 1lib.sk, z-lib.sk)-001-100.pdf",
+      "localPath": "data/book-sources/precise-whitening/001-100.pdf",
+      "bytes": 20292648,
+      "pages": 100,
+      "sha256": "93399bd57c082c99e0ff3b7e5803868a2923045aef38e634d3ec4f7a1c3dec70",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": true
+    },
+    {
+      "book": "走近精准美白——化妆品科学美白机理与技术",
+      "uploadedName": "走近精准美白——化妆品科学美白机理与技术 (陈庆生,胡根华,林梦雅,潘志) (z-library.sk, 1lib.sk, z-lib.sk)-101-200.pdf",
+      "localPath": "data/book-sources/precise-whitening/101-200.pdf",
+      "bytes": 18802526,
+      "pages": 100,
+      "sha256": "d983a58a3531ec3993103b6a66b0ff81de4b8a969c2fa20fe5eb778ded4a81b5",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    },
+    {
+      "book": "走近精准美白——化妆品科学美白机理与技术",
+      "uploadedName": "走近精准美白——化妆品科学美白机理与技术 (陈庆生,胡根华,林梦雅,潘志) (z-library.sk, 1lib.sk, z-lib.sk)-201-274.pdf",
+      "localPath": "data/book-sources/precise-whitening/201-274.pdf",
+      "bytes": 12857544,
+      "pages": 74,
+      "sha256": "c042179b5362deb7a107b7efcd62bae97d092b8bbcebe2036a5a040561c1eb43",
+      "textLayer": "none detected in first 5 pages",
+      "knowledgeImported": false
+    }
+  ]
+}
