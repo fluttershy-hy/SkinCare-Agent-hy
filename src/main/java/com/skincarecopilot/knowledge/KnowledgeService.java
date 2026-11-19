@@ -17,17 +17,22 @@ public class KnowledgeService {
     public static final String MODEL = "bge-small-zh-v1.5-q";
     public static final double MIN_SCORE = 0.75;
     private final EmbeddingModel model;
-    private final BookPageSearch bookPages = new BookPageSearch(java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_TEXT_DIR", "data/book-text")));
+    private final BookPageSearch bookPages;
     private final InMemoryEmbeddingStore<KnowledgeChunk> store = new InMemoryEmbeddingStore<>();
     private final List<KnowledgeEntry> entries;
     private final int chunkCount;
 
     @Autowired
     public KnowledgeService(ObjectMapper json) throws IOException {
-        this(loadEntries(json), new BgeSmallZhV15QuantizedEmbeddingModel(Runnable::run));
+        this(loadEntries(json), new BgeSmallZhV15QuantizedEmbeddingModel(Runnable::run), new BookPageSearch(java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_TEXT_DIR", "data/book-text"))));
     }
 
     KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model) {
+        this(entries, model, new BookPageSearch(java.nio.file.Path.of("/nonexistent-skincare-test-data")));
+    }
+
+    private KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model, BookPageSearch bookPages) {
+        this.bookPages = bookPages;
         this.entries = List.copyOf(entries);
         this.model = model;
         List<KnowledgeChunk> chunks = KnowledgeImporter.split(entries);
@@ -75,6 +80,10 @@ public class KnowledgeService {
         results.addAll(bookPages.search(normalized, Math.min(2, Math.max(0, topK - results.size()))));
         results.addAll(matches.stream().skip(1).map(match -> new SearchHit(match.score(), match.embedded())).toList());
         return new SearchResult(normalized, MODEL, MIN_SCORE, results.stream().limit(topK).toList());
+    }
+
+    public List<SearchHit> searchEndocrinology(String query, int limit) {
+        return bookPages.search(query, limit, "williams-endocrinology-14");
     }
 
     public record Catalog(String model, int dimensions, int chunkSize, int overlap, double minScore,

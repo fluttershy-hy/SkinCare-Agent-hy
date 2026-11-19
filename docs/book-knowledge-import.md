@@ -64,3 +64,9 @@
 新增 `scripts/ocr-books.sh`，按 PDF 分卷逐页识别到 `data/book-text/`，已有页可跳过；需要 Poppler、Tesseract 和中文简体语言包。`TESSDATA_PREFIX` 可指定语言包目录。扫描 PDF 全量识别需要较长时间；本地数据与原书均不提交 Git。可使用 `TESSDATA_PREFIX=/path/to/tessdata scripts/ocr-books.sh` 续跑。
 
 `BookPageSearch` 将已生成的页面按中文双字词进行简单匹配，返回书名、分卷和 PDF 内页，并与原有向量检索结果合并。它是初步关键词检索，尚非全文 Embedding 索引；OCR 精度、结果排序、章节识别、EPUB 全文处理、内分泌与护肤证据联合检索及真实模型问答仍需继续完成和评估。不会宣称已完整检索全部书。
+
+## EPUB 和内分泌检索进度（2026-11-19）
+
+从已收到的 `skincare书籍1.zip` 提取了 5 本 EPUB，使用 `java scripts/ExtractEpub.java data/book-sources/epub data/book-text` 提取到本地共 305 个 XHTML 章节文件。检索结果包含 EPUB 内部文件名；所提取文本与源书均在被 Git 忽略的 `data/`，用户本机须提供源文件并运行提取命令。
+
+涉及激素、内分泌、经期、痤疮和出油的普通聊天会额外在 Williams 内分泌学 OCR 集合中搜索最多两段，并与普通皮肤知识组合交给模型。内分泌学有独立 OCR 任务运行。上述搜索仍为简单关键词匹配，非全文向量索引；需要在真实章节 OCR 完成后检验命中与回答质量。扫描版 OCR 可能失败或产生错字，应查看日志并重跑。OCR 与 EPUB 文本不随 GitHub 推送，当前功能不能因为拉取代码就自动拥有书籍内容。

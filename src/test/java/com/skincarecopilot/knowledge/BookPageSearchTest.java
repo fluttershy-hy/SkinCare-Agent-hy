@@ -17,4 +17,20 @@ class BookPageSearchTest {
         assertTrue(hits.get(0).chunk().source().section().contains("23 页"));
         assertTrue(new BookPageSearch(root).search("维生素缺乏", 2).isEmpty());
     }
+
+    @Test void findsEpubChapterAndLimitsEndocrineSearchToItsCollection() throws Exception {
+        Path epub = root.resolve("epub-护肤书/章节");
+        Path endocrine = root.resolve("williams-endocrinology-14/volume-01");
+        Files.createDirectories(epub);
+        Files.createDirectories(endocrine);
+        String chapter = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString("OEBPS/chapter1.xhtml".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Files.writeString(epub.resolve(chapter + ".txt"), "激素影响皮脂腺，皮肤护理需要温和清洁。".repeat(8));
+        Files.writeString(endocrine.resolve("0005.txt"), "激素影响皮脂腺，内分泌变化具有多种原因。".repeat(8));
+        var search = new BookPageSearch(root);
+        var all = search.search("激素影响皮脂腺", 5);
+        assertTrue(all.stream().anyMatch(hit -> hit.chunk().source().section().contains("OEBPS/chapter1.xhtml")));
+        var filtered = search.search("激素影响皮脂腺", 5, "williams-endocrinology-14");
+        assertEquals(1, filtered.size());
+        assertTrue(filtered.get(0).chunk().source().title().contains("内分泌学"));
+    }
 }
