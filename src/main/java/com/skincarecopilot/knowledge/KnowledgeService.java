@@ -17,6 +17,7 @@ public class KnowledgeService {
     public static final String MODEL = "bge-small-zh-v1.5-q";
     public static final double MIN_SCORE = 0.75;
     private final EmbeddingModel model;
+    private final BookPageSearch bookPages = new BookPageSearch(java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_TEXT_DIR", "data/book-text")));
     private final InMemoryEmbeddingStore<KnowledgeChunk> store = new InMemoryEmbeddingStore<>();
     private final List<KnowledgeEntry> entries;
     private final int chunkCount;
@@ -69,8 +70,11 @@ public class KnowledgeService {
         var embedding = model.embed("为这个句子生成表示以用于检索相关文章：" + normalized).content();
         var matches = store.search(EmbeddingSearchRequest.builder().queryEmbedding(embedding)
                 .maxResults(topK).minScore(MIN_SCORE).build()).matches();
-        return new SearchResult(normalized, MODEL, MIN_SCORE, matches.stream()
-                .map(match -> new SearchHit(match.score(), match.embedded())).toList());
+        var results = new java.util.ArrayList<SearchHit>();
+        if (!matches.isEmpty()) results.add(new SearchHit(matches.get(0).score(), matches.get(0).embedded()));
+        results.addAll(bookPages.search(normalized, Math.min(2, Math.max(0, topK - results.size()))));
+        results.addAll(matches.stream().skip(1).map(match -> new SearchHit(match.score(), match.embedded())).toList());
+        return new SearchResult(normalized, MODEL, MIN_SCORE, results.stream().limit(topK).toList());
     }
 
     public record Catalog(String model, int dimensions, int chunkSize, int overlap, double minScore,
