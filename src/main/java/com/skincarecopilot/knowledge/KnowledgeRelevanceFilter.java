@@ -17,7 +17,8 @@ public class KnowledgeRelevanceFilter {
         if (id.equals("book-binghan-cleansing-sebum") || id.equals("miriam-cleansing"))
             return containsAny(query, "清洁", "洁面", "洗脸", "出油", "油脂");
         if (id.equals("miriam-preservative")) return containsAny(query, "防腐剂", "防腐");
-        if (id.equals("book-binghan-rosacea-redness"))
+        if (id.equals("book-binghan-rosacea-redness") || id.equals("book-rosacea-trigger-context")
+                || id.equals("rosacea-triggers-vary"))
             return containsAny(query, "玫瑰痤疮", "泛红", "发红");
         if (id.equals("book-skin-structure")) return containsAny(query, "表皮", "真皮", "皮肤结构");
         if (id.equals("book-skin-barrier") || id.equals("book-skin-dryness-lipids"))

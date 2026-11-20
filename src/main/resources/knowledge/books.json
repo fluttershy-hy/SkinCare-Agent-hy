@@ -254,5 +254,21 @@
     "locator": "PDF 301-325.pdf 内第9页；原书印刷页280",
     "originalExcerpt": "临床诱发因素有紫外线照射、热刺激和情绪应激",
     "text": "书中列举紫外线照射、热刺激和情绪应激等玫瑰痤疮诱发因素。它们是一般性背景，不能据此断定某位用户的泛红就是玫瑰痤疮，或把某护肤品成分自动判为其个人过敏原。"
+  },
+  {
+    "id": "book-williams-androgen-sebum",
+    "publisher": "Book",
+    "title": "Williams 内分泌学（原书第14版上卷，ISBN 9787523607831）",
+    "url": "book:9787523607831",
+    "verifiedOn": "2026-11-20",
+    "sourceType": "BOOK",
+    "bookAuthor": "Shlomo Melmed 等主编；彭永德、王卫庆、赵家军 译",
+    "bookPublisher": "中国科学技术出版社",
+    "edition": "原书第14版中文上卷",
+    "isbn": "9787523607831",
+    "section": "第19章 · 青春期前雄激素缺乏",
+    "locator": "PDF volume-04.pdf 内第119页",
+    "originalExcerpt": "雄激素缺乏，不能刺激皮脂的产生",
+    "text": "书中在描述青春期前男性雄激素缺乏的病例时提到，缺乏雄激素刺激可使皮脂生成减少。这说明雄激素与皮脂生成存在联系；该病例的人群和情况不同于经期长痘，不能据此断定某个人的激素水平或长痘原因。"
   }
 ]

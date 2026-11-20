@@ -75,6 +75,11 @@ public class ChatService {
             var result = knowledge.search(groundedFollowUp ? previousQuestion + "。" + message : message, 3);
             var relevantHits = new java.util.ArrayList<>(relevance.relevant(groundedFollowUp ? previousQuestion + "。" + message : message, result.matches()));
             if (message.matches(".*(激素|内分泌|月经|经期|雄激素|多囊|痤疮|长痘|出油).*")) {
+                if (message.matches(".*(痤疮|长痘|痘|粉刺).*")) {
+                    for (var hit : knowledge.acneCare()) {
+                        if (relevantHits.stream().noneMatch(existing -> existing.chunk().entryId().equals(hit.chunk().entryId()))) relevantHits.add(hit);
+                    }
+                }
                 for (var hit : knowledge.searchEndocrinology(message, 2)) {
                     if (relevantHits.stream().noneMatch(existing -> existing.chunk().id().equals(hit.chunk().id()))) relevantHits.add(hit);
                 }
@@ -84,7 +89,7 @@ public class ChatService {
                 return new ChatResponse(INSUFFICIENT, route, List.of());
             }
             var unique = new LinkedHashMap<String, ChatResponse.Source>();
-            var context = new StringBuilder("先直接回答问题，资料支持时结合内分泌机制、日常护理和产品类型作自然解释，只使用真正相关的片段，不要逐条复述检索结果。AAD/NICE 可用于其适用人群内的一般知识；Book 是带章节定位的书籍解释，不等同于最新临床指南；博主文章只能作为通俗解释和观点；体外论文不能外推到人体或成品。正文自然解释，不要反复报作者姓名；用到的知识点在句末标注来源编号，来源信息由页面在回答下方展示。无相关依据时简洁说明缺什么，不要用无关片段凑答案。\n");
+            var context = new StringBuilder("先直接回答问题，资料支持时结合内分泌机制、日常护理和产品类型作自然解释，只使用真正相关的片段，不要逐条复述检索结果。先给实用建议，再在最后简短说明资料尚未覆盖的内容，不要反复讲资料不足。AAD/NICE 可用于其适用人群内的一般知识；Book 是带章节定位的书籍解释，不等同于最新临床指南；博主文章只能作为通俗解释和观点；体外论文不能外推到人体或成品。正文自然解释，不要反复报作者姓名；用到的知识点在句末标注来源编号，来源信息由页面在回答下方展示。无相关依据时简洁说明缺什么，不要用无关片段凑答案。\n");
             for (var hit : relevantHits) {
                 var chunk = hit.chunk();
                 var source = chunk.source();

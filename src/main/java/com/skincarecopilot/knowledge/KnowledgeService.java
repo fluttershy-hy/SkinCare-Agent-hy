@@ -83,13 +83,28 @@ public class KnowledgeService {
         return new SearchResult(normalized, MODEL, MIN_SCORE, results.stream().limit(topK).toList());
     }
 
+    public List<SearchHit> acneCare() {
+        return entries.stream().filter(e -> e.id().equals("aad-acne-gentle-skin-care"))
+                .map(e -> new SearchHit(1.0, KnowledgeImporter.split(List.of(e)).get(0))).toList();
+    }
+
     public List<SearchHit> searchEndocrinology(String query, int limit) {
         String expanded = query;
-        if (query.matches(".*(痤疮|长痘|出油|月经|经期).*")) expanded += " 雄激素 皮脂 皮脂腺 痤疮";
-        return rankBookPages(expanded, bookPages.search(expanded, 30, "williams-endocrinology-14"), limit);
+        if (query.matches(".*(痤疮|长痘|出油|月经|经期).*")) expanded = "雄激素 皮脂腺 皮脂分泌 痤疮";
+        var results = new java.util.ArrayList<SearchHit>();
+        if (query.matches(".*(痤疮|长痘|出油|月经|经期).*")) {
+            entries.stream().filter(e -> e.id().equals("book-williams-androgen-sebum"))
+                    .findFirst().ifPresent(e -> results.add(new SearchHit(1.0, KnowledgeImporter.split(List.of(e)).get(0))));
+        }
+        results.addAll(rankBookPages(expanded, bookPages.search(expanded, 30, "williams-endocrinology-14"), Math.max(0, limit - results.size()), 0.68));
+        return results.stream().limit(limit).toList();
     }
 
     private List<SearchHit> rankBookPages(String query, List<SearchHit> candidates, int limit) {
+        return rankBookPages(query, candidates, limit, MIN_SCORE);
+    }
+
+    private List<SearchHit> rankBookPages(String query, List<SearchHit> candidates, int limit, double minimumScore) {
         if (limit <= 0 || candidates.isEmpty()) return List.of();
         float[] q = model.embed("为这个句子生成表示以用于检索相关文章：" + query).content().vector();
         var ranked = new java.util.ArrayList<SearchHit>();
@@ -102,7 +117,7 @@ public class KnowledgeService {
                 dot += q[i] * vector[i]; qnorm += q[i] * q[i]; vnorm += vector[i] * vector[i];
             }
             double score = qnorm == 0 || vnorm == 0 ? 0 : dot / Math.sqrt(qnorm * vnorm);
-            if (score >= MIN_SCORE) ranked.add(new SearchHit(score, chunk));
+            if (score >= minimumScore) ranked.add(new SearchHit(score, chunk));
         }
         ranked.sort(java.util.Comparator.comparingDouble(SearchHit::score).reversed());
         return ranked.stream().limit(limit).toList();
