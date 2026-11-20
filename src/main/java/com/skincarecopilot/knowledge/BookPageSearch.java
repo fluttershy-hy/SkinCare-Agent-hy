@@ -26,6 +26,31 @@ final class BookPageSearch {
         return pages;
     }
 
+    static KnowledgeChunk chunk(Path root, Path p, String text, int start, int end) {
+        String rel = root.relativize(p).toString().replace('\\', '/');
+        String id = "ocr-" + Integer.toUnsignedString(rel.hashCode());
+        String[] path = rel.split("/");
+        String title = switch (path[0]) {
+            case "williams-endocrinology-14" -> "Williams 内分泌学（第14版）";
+            case "acne-and-rosacea-4" -> "痤疮与玫瑰痤疮（第4版）";
+            case "practical-cosmetic-dermatology" -> "实用美容皮肤科学";
+            case "precise-whitening" -> "走近精准美白";
+            case "complete-skin-care" -> "护肤全书";
+            case "beauty-king-2" -> "美容大王 2";
+            default -> path[0].startsWith("epub-") ? path[0].substring(5) : path[0];
+        };
+        String location;
+        if (path[0].startsWith("epub-")) {
+            String encoded = path[path.length - 1].replaceFirst("\\.txt$", "");
+            location = "EPUB 章节 " + new String(Base64.getUrlDecoder().decode(encoded), java.nio.charset.StandardCharsets.UTF_8);
+        } else {
+            location = "分卷 " + path[1] + "，PDF 内第 " + Integer.parseInt(path[path.length-1].replace(".txt", "")) + " 页（OCR）";
+        }
+        String part = text.substring(start, end);
+        var source = new KnowledgeEntry(id, "Book", title, "book:local", location, "2026-11-19", "本地书籍片段", part, "BOOK", null, null, null, null, rel);
+        return new KnowledgeChunk(id + ":" + start, id, start, end, part, source);
+    }
+
     List<KnowledgeService.SearchHit> search(String query, int limit) {
         return search(query, limit, null);
     }
@@ -49,28 +74,8 @@ final class BookPageSearch {
                         if (score > best) { best = score; bestStart = start; }
                     }
                     if (best < 2) return;
-                    String rel = root.relativize(p).toString().replace('\\', '/');
-                    String id = "ocr-" + Integer.toUnsignedString(rel.hashCode());
-                    String[] path = rel.split("/");
-                    String title = switch (path[0]) {
-                        case "williams-endocrinology-14" -> "Williams 内分泌学（第14版）";
-                        case "acne-and-rosacea-4" -> "痤疮与玫瑰痤疮（第4版）";
-                        case "practical-cosmetic-dermatology" -> "实用美容皮肤科学";
-                        case "precise-whitening" -> "走近精准美白";
-                        case "complete-skin-care" -> "护肤全书";
-                        case "beauty-king-2" -> "美容大王 2";
-                        default -> path[0].startsWith("epub-") ? path[0].substring(5) : path[0];
-                    };
-                    String part = text.substring(bestStart, Math.min(text.length(), bestStart + 220));
-                    String location;
-                    if (path[0].startsWith("epub-")) {
-                        String encoded = path[path.length - 1].replaceFirst("\\.txt$", "");
-                        location = "EPUB 章节 " + new String(Base64.getUrlDecoder().decode(encoded), java.nio.charset.StandardCharsets.UTF_8);
-                    } else {
-                        location = "分卷 " + path[1] + "，PDF 内第 " + Integer.parseInt(path[path.length-1].replace(".txt", "")) + " 页（OCR）";
-                    }
-                    var source = new KnowledgeEntry(id, "Book", title, "book:local", location, "2026-11-19", "本地书籍片段", part, "BOOK", null, null, null, null, rel);
-                    results.add(new KnowledgeService.SearchHit((double) best / terms.size(), new KnowledgeChunk(id, id, bestStart, bestStart + part.length(), part, source)));
+                    KnowledgeChunk chunk = chunk(root, p, text, bestStart, Math.min(text.length(), bestStart + 220));
+                    results.add(new KnowledgeService.SearchHit((double) best / terms.size(), chunk));
                 } catch (RuntimeException ignored) { }
             });
         results.sort(Comparator.comparingDouble(KnowledgeService.SearchHit::score).reversed());

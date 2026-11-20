@@ -19,21 +19,24 @@ public class KnowledgeService {
     private final EmbeddingModel model;
     private final java.util.concurrent.ConcurrentMap<String, float[]> bookVectors = new java.util.concurrent.ConcurrentHashMap<>();
     private final BookPageSearch bookPages;
+    private final BookVectorIndex bookIndex;
     private final InMemoryEmbeddingStore<KnowledgeChunk> store = new InMemoryEmbeddingStore<>();
     private final List<KnowledgeEntry> entries;
     private final int chunkCount;
 
     @Autowired
     public KnowledgeService(ObjectMapper json) throws IOException {
-        this(loadEntries(json), new BgeSmallZhV15QuantizedEmbeddingModel(Runnable::run), new BookPageSearch(java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_TEXT_DIR", "data/book-text"))));
+        this(loadEntries(json), new BgeSmallZhV15QuantizedEmbeddingModel(Runnable::run), new BookPageSearch(java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_TEXT_DIR", "data/book-text"))),
+                new BookVectorIndex(java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_TEXT_DIR", "data/book-text")), java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_VECTOR_DIR", "data/book-vectors"))));
     }
 
     KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model) {
-        this(entries, model, new BookPageSearch(java.nio.file.Path.of("/nonexistent-skincare-test-data")));
+        this(entries, model, new BookPageSearch(java.nio.file.Path.of("/nonexistent-skincare-test-data")), new BookVectorIndex(java.nio.file.Path.of("/nonexistent-skincare-test-data"), java.nio.file.Path.of("/nonexistent-skincare-test-vectors")));
     }
 
-    private KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model, BookPageSearch bookPages) {
+    private KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model, BookPageSearch bookPages, BookVectorIndex bookIndex) {
         this.bookPages = bookPages;
+        this.bookIndex = bookIndex;
         this.entries = List.copyOf(entries);
         this.model = model;
         List<KnowledgeChunk> chunks = KnowledgeImporter.split(entries);
@@ -78,7 +81,10 @@ public class KnowledgeService {
                 .maxResults(topK).minScore(MIN_SCORE).build()).matches();
         var results = new java.util.ArrayList<SearchHit>();
         if (!matches.isEmpty()) results.add(new SearchHit(matches.get(0).score(), matches.get(0).embedded()));
-        results.addAll(rankBookPages(normalized, bookPages.search(normalized, 20), Math.min(2, Math.max(0, topK - results.size()))));
+        int bookLimit = Math.min(2, Math.max(0, topK - results.size()));
+        var vectorHits = bookIndex.search(embedding.vector(), bookLimit, null, 0.65);
+        results.addAll(vectorHits);
+        if (vectorHits.isEmpty()) results.addAll(rankBookPages(normalized, bookPages.search(normalized, 20), bookLimit));
         results.addAll(matches.stream().skip(1).map(match -> new SearchHit(match.score(), match.embedded())).toList());
         return new SearchResult(normalized, MODEL, MIN_SCORE, results.stream().limit(topK).toList());
     }
@@ -96,7 +102,13 @@ public class KnowledgeService {
             entries.stream().filter(e -> e.id().equals("book-williams-androgen-sebum"))
                     .findFirst().ifPresent(e -> results.add(new SearchHit(1.0, KnowledgeImporter.split(List.of(e)).get(0))));
         }
-        results.addAll(rankBookPages(expanded, bookPages.search(expanded, 30, "williams-endocrinology-14"), Math.max(0, limit - results.size()), 0.68));
+        int remaining = Math.max(0, limit - results.size());
+        if (remaining > 0) {
+            float[] queryVector = model.embed("为这个句子生成表示以用于检索相关文章：" + expanded).content().vector();
+            var vectorHits = bookIndex.search(queryVector, remaining, "williams-endocrinology-14", 0.68);
+            results.addAll(vectorHits);
+            if (vectorHits.isEmpty()) results.addAll(rankBookPages(expanded, bookPages.search(expanded, 30, "williams-endocrinology-14"), remaining, 0.68));
+        }
         return results.stream().limit(limit).toList();
     }
 

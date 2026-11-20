@@ -84,3 +84,19 @@
 核对 Williams 第 14 版上卷版权页和 `volume-04.pdf` 内第 119 页，加入雄激素与皮脂生成的简短条目；书页讲的是青春期前男性雄激素缺乏的情况。核对 AAD 的 [10 skin care habits that can worsen acne](https://www.aad.org/public/diseases/acne/skin-care/tips)，加入温和洁面与防晒条目。痘痘问题会补充这两类来源，同时过滤与问题无关的玫瑰痤疮诱因。
 
 真实调用 `/api/chat` 提问“经期激素变化为什么会长痘？平时怎么护肤？”，响应列出了 Williams 与 AAD 两个来源，并给出温和洁面和防晒建议；这两条资料仍不足以具体解释经期前后激素变化机制。所用 Williams 证据是人工核对条目，并非全文向量索引成功召回。OCR 双栏混排与检索覆盖问题仍待处理，全文向量索引尚未完成。当前精选条目 40 条。
+
+## 全文持久化向量索引（2026-11-20）
+
+扫描页 OCR 与 EPUB 章节文字先保存在 `data/book-text/`。`scripts/index-books.sh` 使用本地 BGE-small-zh 模型把每个文件按 220 个字符、步长 180 切分并计算向量，逐文件写入 `data/book-vectors/`。索引记录源文字 SHA-256，可中断后续跑；变更的文字会重算。向量文件和书籍原文均在 Git 忽略的 `data/`，GitHub 不包含用户上传的书或索引。
+
+Linux/macOS 下从项目根目录运行 `MVN=/path/to/mvn scripts/index-books.sh`；也可以直接设置 `SKINCARE_BOOK_TEXT_DIR` 和 `SKINCARE_BOOK_VECTOR_DIR` 指定文字及索引目录。Windows PowerShell 示例（先安装 JDK、Maven，确保 `mvn` 可用）：
+
+```powershell
+mvn -q -DskipTests compile dependency:build-classpath "-Dmdep.outputFile=data/book-classpath.txt"
+$bookClasspath = (Get-Content data/book-classpath.txt -Raw).Trim()
+java -Xmx1g -cp "target/classes;$bookClasspath" com.skincarecopilot.knowledge.BookVectorIndex data/book-text data/book-vectors
+```
+
+建立索引前需要在本机准备同样的书籍文字目录；仅 `git pull` 不会带来云环境里的 OCR 结果。应用重新启动后读取索引，扫描新增索引并每 30 秒刷新缓存；关键词召回保留为索引无命中时的补充。当前模型为 `bge-small-zh-v1.5-q`，若更换模型或切分规则，需要删除旧 `data/book-vectors/` 后重新生成。OCR 文字可能有错字或双栏混排，检索结果仍需结合具体原页核对。
+
+本次云环境构建完成：`data/book-text/` 共 3,720 个文字文件，生成 3,720 个索引记录、31,138 个向量片段，大小约 197 MiB；其中 26 个文字文件不足 30 字符，因此对应记录没有向量片段（尚未逐页区分空白页和 OCR 质量问题）。再次运行脚本结果为“新建或更新=0，跳过未变化=3720”。完整测试通过；在新启动的应用中查询“皮肤屏障和保湿有什么关系”，从向量索引召回《皮肤表观生理学》和《听肌肤的话2》的 EPUB 章节。OCR 尚有少数缺页，早前超过大小限制、无法下载的书籍压缩包也不在本次索引覆盖内。
