@@ -19,10 +19,12 @@ public class KnowledgeService {
     private final EmbeddingModel model;
     private final java.util.concurrent.ConcurrentMap<String, float[]> bookVectors = new java.util.concurrent.ConcurrentHashMap<>();
     private final BookPageSearch bookPages;
+    private final LocalReranker reranker;
     private final BookVectorIndex bookIndex;
     private final InMemoryEmbeddingStore<KnowledgeChunk> store = new InMemoryEmbeddingStore<>();
     private final List<KnowledgeEntry> entries;
     private final int chunkCount;
+    private final List<KnowledgeChunk> curatedChunks;
 
     @Autowired
     public KnowledgeService(ObjectMapper json) throws IOException {
@@ -36,10 +38,12 @@ public class KnowledgeService {
 
     private KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model, BookPageSearch bookPages, BookVectorIndex bookIndex) {
         this.bookPages = bookPages;
+        this.reranker = new LocalReranker(System.getenv().getOrDefault("SKINCARE_RERANK_MODEL", ""), System.getenv().getOrDefault("SKINCARE_RERANK_TOKENIZER", ""));
         this.bookIndex = bookIndex;
         this.entries = List.copyOf(entries);
         this.model = model;
         List<KnowledgeChunk> chunks = KnowledgeImporter.split(entries);
+        this.curatedChunks = List.copyOf(chunks);
         // Small curated corpus: serial embedding bounds CPU use, with no remote API or chat key.
         for (KnowledgeChunk chunk : chunks) {
             store.add(chunk.id(), model.embed(chunk.text()).content(), chunk);
@@ -76,17 +80,24 @@ public class KnowledgeService {
         if (chunkCount == 0) {
             return new SearchResult(normalized, MODEL, MIN_SCORE, List.of());
         }
-        var embedding = model.embed("为这个句子生成表示以用于检索相关文章：" + normalized).content();
+        String expanded = HybridRetrieval.expand(normalized);
+        var embedding = model.embed("为这个句子生成表示以用于检索相关文章：" + expanded).content();
         var matches = store.search(EmbeddingSearchRequest.builder().queryEmbedding(embedding)
-                .maxResults(topK).minScore(MIN_SCORE).build()).matches();
-        var results = new java.util.ArrayList<SearchHit>();
-        if (!matches.isEmpty()) results.add(new SearchHit(matches.get(0).score(), matches.get(0).embedded()));
-        int bookLimit = Math.min(2, Math.max(0, topK - results.size()));
-        var vectorHits = bookIndex.search(embedding.vector(), bookLimit, null, 0.65);
-        results.addAll(vectorHits);
-        if (vectorHits.isEmpty()) results.addAll(rankBookPages(normalized, bookPages.search(normalized, 20), bookLimit));
-        results.addAll(matches.stream().skip(1).map(match -> new SearchHit(match.score(), match.embedded())).toList());
-        return new SearchResult(normalized, MODEL, MIN_SCORE, results.stream().limit(topK).toList());
+                .maxResults(25).minScore(0.60).build()).matches();
+        var semantic = new java.util.ArrayList<SearchHit>();
+        semantic.addAll(matches.stream().map(match -> new SearchHit(match.score(), match.embedded())).toList());
+        semantic.addAll(bookIndex.search(embedding.vector(), 25, null, 0.60));
+        semantic.sort(java.util.Comparator.comparingDouble(SearchHit::score).reversed());
+        var corpus = new java.util.ArrayList<>(curatedChunks);
+        corpus.addAll(bookIndex.chunks());
+        var lexical = HybridRetrieval.bm25(expanded, corpus, 25);
+        var candidates = HybridRetrieval.fuse(lexical, semantic, 25).stream()
+                .filter(hit -> !hit.chunk().text().matches("(?is).*\\d+(?:\\.\\d+)?\\s*(?:mg|毫克|微克|μg)\\b.*"))
+                .toList();
+        // BGE 的语义相似度作为本地重排分数；低分片段不进入模型上下文。
+        var reranked = reranker.available() ? reranker.rerank(normalized, candidates, topK, 0.10)
+                : rankBookPages(normalized, candidates, topK, MIN_SCORE);
+        return new SearchResult(normalized, reranker.available() ? "bge-reranker-base" : MODEL, reranker.available() ? 0.10 : MIN_SCORE, reranked);
     }
 
     public List<SearchHit> acneCare() {
@@ -129,11 +140,15 @@ public class KnowledgeService {
                 dot += q[i] * vector[i]; qnorm += q[i] * q[i]; vnorm += vector[i] * vector[i];
             }
             double score = qnorm == 0 || vnorm == 0 ? 0 : dot / Math.sqrt(qnorm * vnorm);
+            score = (score + 1.0) / 2.0;
             if (score >= minimumScore) ranked.add(new SearchHit(score, chunk));
         }
         ranked.sort(java.util.Comparator.comparingDouble(SearchHit::score).reversed());
         return ranked.stream().limit(limit).toList();
     }
+
+    @jakarta.annotation.PreDestroy
+    public void close() { reranker.close(); }
 
     public record Catalog(String model, int dimensions, int chunkSize, int overlap, double minScore,
                           int entryCount, int chunkCount, List<KnowledgeEntry> entries) {

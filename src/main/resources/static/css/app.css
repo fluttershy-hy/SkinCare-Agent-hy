@@ -80,3 +80,8 @@ aside{position:sticky;left:0;z-index:2;min-height:0;overscroll-behavior:contain;
 #knowledge-results article{border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0;line-height:1.5;white-space:pre-wrap}
 #knowledge-results p{margin:0 0 4px}
 @media(max-width:600px){.context-tools{grid-template-columns:1fr}}
+
+.quick-replies { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 16px; }
+.quick-replies button { border: 1px solid #c6a8a3; border-radius: 18px; background: #fffaf5; color: #795652; padding: 7px 14px; cursor: pointer; font: inherit; }
+.quick-replies button:hover { background: #f1e1d9; }
+.quick-replies button:focus-visible { outline: 2px solid #795652; outline-offset: 2px; }

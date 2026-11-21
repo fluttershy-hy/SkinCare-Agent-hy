@@ -82,6 +82,8 @@ final class BookVectorIndex {
         } catch (IOException ignored) { }
         return cache;
     }
+    List<KnowledgeChunk> chunks() { return load().stream().map(Indexed::chunk).toList(); }
+
     List<KnowledgeService.SearchHit> search(float[] query, int limit, String collection, double minScore) {
         var matches = new PriorityQueue<KnowledgeService.SearchHit>(Comparator.comparingDouble(KnowledgeService.SearchHit::score));
         for (Indexed item : load()) {

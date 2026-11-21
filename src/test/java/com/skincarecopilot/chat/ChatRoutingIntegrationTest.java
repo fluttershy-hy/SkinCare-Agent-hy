@@ -67,6 +67,24 @@ class ChatRoutingIntegrationTest {
         verify(knowledge).search(anyString(), eq(3));
     }
 
+    @Test
+    void consultationWithoutEvidenceOffersObservationWithoutCallingModel() {
+        KnowledgeService knowledge = mock(KnowledgeService.class);
+        when(knowledge.search(anyString(), eq(3))).thenReturn(
+                new KnowledgeService.SearchResult("question", KnowledgeService.MODEL, .75, List.of()));
+        ChatService service = new ChatService("", "http://127.0.0.1:1/v1", "fake-model",
+                mock(ProfileService.class), new ChatMemoryRegistry(), knowledge, new ChatRouter(),
+                new com.skincarecopilot.knowledge.KnowledgeRelevanceFilter());
+        service.replyWithSources("demo-user", "observe", "脸颊泛红刺痛");
+        service.replyWithSources("demo-user", "observe", "换了新护肤品");
+        service.replyWithSources("demo-user", "observe", "偏干或敏感");
+        ChatResponse result = service.replyWithSources("demo-user", "observe", "刺痛或瘙痒");
+        assertTrue(result.answer().contains("资料不足"));
+        assertEquals(List.of("需要记录", "暂不需要"), result.quickReplies());
+        assertTrue(result.sources().isEmpty());
+        assertTrue(service.replyWithSources("demo-user", "observe", "需要记录").answer().contains("每天"));
+    }
+
     private HttpServer fakeModel(AtomicReference<JsonNode> requestBody) throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/v1/chat/completions", exchange -> {

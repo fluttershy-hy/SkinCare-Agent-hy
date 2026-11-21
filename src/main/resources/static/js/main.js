@@ -29,6 +29,17 @@ function message(label, text, isUser = false, isError = false) {
   row.append(name, body); byId('messages').append(row); scroll();
   return row;
 }
+function appendQuickReplies(options = []) {
+  if (!Array.isArray(options) || !options.length) return;
+  const group = document.createElement("div"); group.className = "quick-replies";
+  for (const option of options.slice(0, 3)) {
+    if (typeof option !== "string" || !option.trim()) continue;
+    const button = document.createElement("button"); button.type = "button"; button.textContent = option;
+    button.addEventListener("click", () => { if (!pending) { group.remove(); send(option); } });
+    group.append(button);
+  }
+  byId("messages").append(group); scroll();
+}
 function appendSources(sources = []) {
   if (!sources.length) return;
   const panel = document.createElement('details'); panel.className = 'sources'; panel.open = true;
@@ -62,6 +73,7 @@ async function send(input) {
   if (!value('user-id')) { message('提示', '请先填写左侧用户 ID。', false, true); return; }
   const productA = value('product-a'), productB = value('product-b');
   if (productB && !productA) { message('提示', '请先填写产品 A 的成分表。', false, true); return; }
+  document.querySelectorAll('.quick-replies').forEach(group => group.remove());
   message('你', text, true);
   byId('prompt').value = '';
   pending = true; byId('composer').querySelector('.send').disabled = true;
@@ -83,6 +95,7 @@ async function send(input) {
     stopThinking();
     message('SkinCare Agent', data.answer);
     appendSources(data.sources);
+    appendQuickReplies(data.quickReplies);
     if (data.assessment?.decision === 'AVOID_CONFIRMED_MATCH' && !data.answer?.includes('过敏')) {
       message('已确认过敏成分提示', data.assessment.reason);
     }

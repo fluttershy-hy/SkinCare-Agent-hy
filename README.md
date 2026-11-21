@@ -192,3 +192,7 @@ Day 6 后新增只读产品网页查询能力。在聊天框填写具体产品�
 ### 书籍知识条目
 
 `src/main/resources/knowledge/books.json` 保存来自用户提供书籍的少量改写条目，不保存电子书原文件。当前两本书共 8 条，合并原有网页条目后为 30 条。书籍来源保留版本、ISBN、章/节和 EPUB 定位；书籍解释与专业指南、论文、作者观点在回答时分清证据性质。导入范围与未能读取的大文件见[书籍导入记录](docs/book-knowledge-import.md)。
+
+### 渐进咨询和本地重排
+
+泛红、刺痛等问题会在当前会话中逐步收集近期变化、肤质和伴随感受，并提供快捷回复。检索采用 BM25、向量召回和 RRF；可选的本地 BGE 交叉编码器可在 Windows PowerShell 中通过 `. .\scripts\setup-reranker.ps1` 安装并配置。完整说明见 [渐进咨询和混合检索](docs/consultation-and-search.md)。
