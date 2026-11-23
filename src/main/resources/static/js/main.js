@@ -1,4 +1,4 @@
-import {post} from './api.js';
+import {post, request} from './api.js';
 import {startThinking, stopThinking} from './animation.js';
 import {initProfile, currentProfile, loadProfile} from './profile.js';
 import {initTheme} from './theme.js';
@@ -120,3 +120,31 @@ updateSession(); initTheme(); initProfile(); initShortcuts(); initTools();
 byId('new').addEventListener('click', () => { reset(); byId('prompt').focus(); });
 byId('user-id').addEventListener('change', () => { reset(); loadProfile(); });
 byId('composer').addEventListener('submit', event => { event.preventDefault(); send(value('prompt')); });
+
+const acneDialog = byId('acne-dialog');
+byId('acne-open').addEventListener('click', async () => {
+  if (pending) return;
+  byId('acne-status').textContent = '正在检查图片分析服务…'; acneDialog.showModal();
+  try { const status = await request('/api/acne/status'); byId('acne-status').textContent = status.configured ? '' : '图片分析尚未配置视觉模型，请先按 README 设置视觉接口地址、模型名和密钥。'; }
+  catch (error) { byId('acne-status').textContent = error.message; }
+});
+byId('acne-close').addEventListener('click', () => acneDialog.close());
+byId('acne-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (pending) return;
+  const file = byId('acne-image').files[0];
+  if (!value('user-id')) { byId('acne-status').textContent = '请先填写左侧用户 ID。'; return; }
+  if (!file || file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png'].includes(file.type)) {
+    byId('acne-status').textContent = '请选择不超过 5 MiB 的 JPEG 或 PNG 图片。'; return;
+  }
+  const form = new FormData(); form.append('image', file); form.append('userId', value('user-id')); form.append('sessionId', sessionId);
+  form.append('question', value('acne-question'));
+  acneDialog.close(); message('你', value('acne-question') || '请帮我看看照片中的痘痘表现。', true);
+  pending = true; byId('composer').querySelector('.send').disabled = true; byId('new').disabled = true; startThinking();
+  try {
+    const data = await request('/api/acne/analyze', {method:'POST', body:form});
+    stopThinking(); message('SkinCare Agent', data.answer); appendSources(data.sources);
+    byId('acne-form').reset();
+  } catch (error) { stopThinking(); message('请求未完成', error.message, false, true); }
+  finally { pending = false; byId('composer').querySelector('.send').disabled = false; byId('new').disabled = false; }
+});

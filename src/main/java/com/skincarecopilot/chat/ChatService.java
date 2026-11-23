@@ -56,6 +56,19 @@ public class ChatService {
         this(apiKey, baseUrl, modelName, profiles, memories, null, new ChatRouter(), new KnowledgeRelevanceFilter());
     }
 
+    /** 仅将本次的文字观察和回答放入当前会话，不保存图片。 */
+    public void rememberPhotoTurn(String userId, String sessionId, String question, String observation, String answer) {
+        ConversationId id = new ConversationId(userId, sessionId);
+        var memory = memories.get(id);
+        synchronized (memory) {
+            memory.add(dev.langchain4j.data.message.UserMessage.from("用户上传了图片并询问：" + question
+                    + "；图片模型初步描述（不构成确诊）：" + observation));
+            memory.add(dev.langchain4j.data.message.AiMessage.from(answer));
+            String searchContext = question + "。图片初步描述：" + observation;
+            lastGroundedQuestion.put(id, searchContext.substring(0, Math.min(400, searchContext.length())));
+        }
+    }
+
     public String reply(String userId, String sessionId, String message) {
         return replyWithSources(userId, sessionId, message).answer();
     }
@@ -79,7 +92,9 @@ public class ChatService {
         String prompt = message;
         if (route == ChatRoute.KNOWLEDGE || route == ChatRoute.COMBINED) {
             if (knowledge == null) throw new IllegalStateException("知识检索服务未配置");
-            var result = knowledge.search(groundedFollowUp ? previousQuestion + "。" + message : message, 3);
+            String retrievalQuery = groundedFollowUp ? previousQuestion + "。" + message : message;
+            if (retrievalQuery.length() > 500) retrievalQuery = retrievalQuery.substring(0, 500);
+            var result = knowledge.search(retrievalQuery, 3);
             var relevantHits = new java.util.ArrayList<>(relevance.relevant(groundedFollowUp ? previousQuestion + "。" + message : message, result.matches()));
             if (relevantHits.isEmpty()) {
                 // Do not ask the model to invent an answer or a citation.
