@@ -62,7 +62,8 @@ public class ChatService {
 
     public ChatResponse replyWithSources(String userId, String sessionId, String message) {
         ConversationId id = new ConversationId(userId, sessionId);
-        var consultationResult = consultation.next(id, message);
+        var consultationResult = consultation.next(id, message,
+                () -> profiles.find(userId).map(profile -> profile.skinType()).orElse(""));
         if (consultationResult != null && consultationResult.answer() != null)
             return new ChatResponse(consultationResult.answer(), ChatRoute.COMBINED, List.of(), consultationResult.quickReplies());
         if (consultationResult != null && consultationResult.retrievalQuery() != null) message = consultationResult.retrievalQuery();
@@ -97,8 +98,8 @@ public class ChatService {
             }
             sources = List.copyOf(unique.values());
             prompt = context.append("用户问题：").append(message).toString();
-            if (consultationResult != null) prompt += "\n本轮请不要继续提问，程序会在回答后附上一个观察问题。";
-            if (route == ChatRoute.COMBINED) {
+            if (consultationResult != null) prompt += "\n请用自然的两段左右简短回应，先用一句话真诚回应用户，再针对实际情况给一两条可操作的建议；不要逐条罗列所有可能原因，也不要反复解释边界；不要提问，不要提及程序、模型提示或处理步骤。近期换了产品不代表症状一定发生在更换之后。";
+            if (route == ChatRoute.COMBINED || consultationResult != null) {
                 // Personal context comes only from confirmed H2 data, never inferred from chat.
                 String confirmed = profiles.find(userId)
                         .map(profile -> "已确认肤质：" + profile.skinType() + "；已确认过敏原："
@@ -120,7 +121,9 @@ public class ChatService {
             // Citations are attached by Java from actual matches, never invented by model text.
             if (consultationResult != null) {
                 consultation.observe(id);
-                answer += "\n\n接下来需要整理观察记录吗？";
+                answer = answer.replaceAll("【(?:共情回应|当前分析与建议|下一步排查)】", "")
+                        .replaceAll("(?:程序随后会|程序会在回答后)[^。！？\\n]*[。！？]?", "").strip();
+                answer += "\n\n需要我帮你整理一下观察记录吗？";
                 return new ChatResponse(answer, route, sources, List.of("需要记录", "暂不需要"));
             }
             return new ChatResponse(answer, route, sources);
@@ -130,7 +133,7 @@ public class ChatService {
     interface Assistant {
         @SystemMessage("你是一位专业、耐心、懂成分的护肤陪伴顾问，不提供医学诊断、处方或药物剂量。"
                 + "根据参考资料和用户亲口提供的信息，用自己的话回答，不大段复制原文，不把未确认的诱因或过敏当成事实。"
-                + "按【共情回应】【当前分析与建议】【下一步排查】组织，语气自然，建议具体简洁。"
+                + "语气自然亲切，像日常对话一样先回应困扰，再给出具体简洁的建议；不要输出【共情回应】等模板标签，也不要说程序或系统将要做什么。"
                 + "如果资料不足就明确说不知道，建议记录症状和近期护肤品以备咨询；不要重复列举无关来源。"
                 + "每次最多询问一个关键问题，用户已明确回答的问题不要重复询问；工具读取的是已确认画像，切勿自动保存推断的过敏史。"
                 + "引用片段只作为其适用范围内的依据，培养或细胞实验不能直接证明成品或个人效果；饮食不能被描述为治疗痤疮。"

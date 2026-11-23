@@ -77,12 +77,30 @@ class ChatRoutingIntegrationTest {
                 new com.skincarecopilot.knowledge.KnowledgeRelevanceFilter());
         service.replyWithSources("demo-user", "observe", "脸颊泛红刺痛");
         service.replyWithSources("demo-user", "observe", "换了新护肤品");
-        service.replyWithSources("demo-user", "observe", "偏干或敏感");
-        ChatResponse result = service.replyWithSources("demo-user", "observe", "刺痛或瘙痒");
+        ChatResponse result = service.replyWithSources("demo-user", "observe", "偏干或敏感");
         assertTrue(result.answer().contains("资料不足"));
         assertEquals(List.of("需要记录", "暂不需要"), result.quickReplies());
         assertTrue(result.sources().isEmpty());
-        assertTrue(service.replyWithSources("demo-user", "observe", "需要记录").answer().contains("每天"));
+        assertTrue(service.replyWithSources("demo-user", "observe", "需要记录").answer().contains("记下"));
+    }
+
+    @Test
+    void consultationUsesStoredProfileAndAsksForAreaBeforeOtherSlots() {
+        ProfileService profiles = mock(ProfileService.class);
+        when(profiles.find("demo-user")).thenReturn(java.util.Optional.of(
+                new com.skincarecopilot.profile.Profile("demo-user", "干皮 敏感肌", List.of("香精"))));
+        KnowledgeService knowledge = mock(KnowledgeService.class);
+        when(knowledge.search(anyString(), eq(3))).thenReturn(
+                new KnowledgeService.SearchResult("question", KnowledgeService.MODEL, .75, List.of()));
+        ChatService service = new ChatService("", "http://127.0.0.1:1/v1", "fake-model", profiles,
+                new ChatMemoryRegistry(), knowledge, new ChatRouter(), new com.skincarecopilot.knowledge.KnowledgeRelevanceFilter());
+        assertTrue(service.replyWithSources("demo-user", "s1", "皮肤为什么经常泛红").answer().contains("部位"));
+        assertTrue(service.replyWithSources("demo-user", "s1", "脸颊").answer().contains("更换护肤品"));
+        ChatResponse afterTrigger = service.replyWithSources("demo-user", "s1", "换了新护肤品");
+        assertTrue(afterTrigger.answer().contains("刺痛"));
+        assertFalse(afterTrigger.answer().contains("肤质"));
+        assertTrue(service.replyWithSources("demo-user", "s1", "刺痛或瘙痒").answer().contains("资料不足"));
+        verify(profiles, never()).saveConfirmed(anyString(), any());
     }
 
     private HttpServer fakeModel(AtomicReference<JsonNode> requestBody) throws Exception {
