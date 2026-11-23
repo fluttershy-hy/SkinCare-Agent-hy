@@ -79,7 +79,7 @@ class ChatRoutingIntegrationTest {
         service.replyWithSources("demo-user", "observe", "换了新护肤品");
         ChatResponse result = service.replyWithSources("demo-user", "observe", "偏干或敏感");
         assertTrue(result.answer().contains("资料不足"));
-        assertEquals(List.of("需要记录", "暂不需要"), result.quickReplies());
+        assertEquals(List.of("继续排查", "需要记录", "暂不需要"), result.quickReplies());
         assertTrue(result.sources().isEmpty());
         assertTrue(service.replyWithSources("demo-user", "observe", "需要记录").answer().contains("记下"));
     }
@@ -101,6 +101,30 @@ class ChatRoutingIntegrationTest {
         assertFalse(afterTrigger.answer().contains("肤质"));
         assertTrue(service.replyWithSources("demo-user", "s1", "刺痛或瘙痒").answer().contains("资料不足"));
         verify(profiles, never()).saveConfirmed(anyString(), any());
+    }
+
+    @Test
+    void exerciseFollowupKeepsEarlierAnswersWhenEvidenceIsMissing() {
+        ProfileService profiles = mock(ProfileService.class);
+        when(profiles.find("demo-user")).thenReturn(java.util.Optional.of(
+                new com.skincarecopilot.profile.Profile("demo-user", "干皮 敏感肌", List.of())));
+        KnowledgeService knowledge = mock(KnowledgeService.class);
+        when(knowledge.search(anyString(), eq(3))).thenReturn(
+                new KnowledgeService.SearchResult("question", KnowledgeService.MODEL, .75, List.of()));
+        ChatService service = new ChatService("", "http://127.0.0.1:1/v1", "fake-model", profiles,
+                new ChatMemoryRegistry(), knowledge, new ChatRouter(), new com.skincarecopilot.knowledge.KnowledgeRelevanceFilter());
+        assertTrue(service.replyWithSources("demo-user", "exercise", "为什么运动后皮肤泛红刺痛").answer().contains("部位"));
+        assertTrue(service.replyWithSources("demo-user", "exercise", "脸颊").answer().contains("多久"));
+        assertTrue(service.replyWithSources("demo-user", "exercise", "30分钟内缓解").answer().contains("凸起"));
+        var result = service.replyWithSources("demo-user", "exercise", "没有凸起");
+        assertTrue(result.quickReplies().contains("继续排查"));
+        assertTrue(service.replyWithSources("demo-user", "exercise", "继续排查").answer().contains("热水澡"));
+        service.replyWithSources("demo-user", "exercise", "也会出现");
+        var query = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(knowledge, times(2)).search(query.capture(), eq(3));
+        assertTrue(query.getAllValues().get(1).contains("30分钟内缓解"));
+        assertTrue(query.getAllValues().get(1).contains("没有凸起"));
+        assertTrue(query.getAllValues().get(1).contains("遇热时是否有类似不适：也会出现"));
     }
 
     private HttpServer fakeModel(AtomicReference<JsonNode> requestBody) throws Exception {

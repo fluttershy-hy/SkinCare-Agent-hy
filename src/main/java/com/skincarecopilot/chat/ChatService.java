@@ -83,22 +83,27 @@ public class ChatService {
             var relevantHits = new java.util.ArrayList<>(relevance.relevant(groundedFollowUp ? previousQuestion + "。" + message : message, result.matches()));
             if (relevantHits.isEmpty()) {
                 // Do not ask the model to invent an answer or a citation.
-                if (consultationResult != null) consultation.observe(id);
-                return new ChatResponse(INSUFFICIENT + (consultationResult == null ? "" : "\n\n需要我帮你整理观察记录吗？"), route, List.of(), consultationResult == null ? List.of() : List.of("需要记录", "暂不需要"));
+                if (consultationResult != null) {
+                    consultation.observe(id);
+                    if (consultation.canInvestigate(id))
+                        return new ChatResponse(INSUFFICIENT + "\n\n你想继续排查，还是先整理观察记录？", route, List.of(), List.of("继续排查", "需要记录", "暂不需要"));
+                    return new ChatResponse(INSUFFICIENT + "\n\n需要我帮你整理观察记录吗？", route, List.of(), List.of("需要记录", "暂不需要"));
+                }
+                return new ChatResponse(INSUFFICIENT, route, List.of());
             }
             var unique = new LinkedHashMap<String, ChatResponse.Source>();
-            var context = new StringBuilder("先直接回答问题，资料支持时结合内分泌机制、日常护理和产品类型作自然解释，只使用真正相关的片段，不要逐条复述检索结果。先给实用建议，再在最后简短说明资料尚未覆盖的内容，不要反复讲资料不足。AAD/NICE 可用于其适用人群内的一般知识；Book 是带章节定位的书籍解释，不等同于最新临床指南；博主文章只能作为通俗解释和观点；体外论文不能外推到人体或成品。正文自然解释，不要反复报作者姓名；用到的知识点在句末标注来源编号，来源信息由页面在回答下方展示。无相关依据时简洁说明缺什么，不要用无关片段凑答案。\n");
+            var context = new StringBuilder("先直接回答问题，资料支持时结合内分泌机制、日常护理和产品类型作自然解释，只使用真正相关的片段，不要逐条复述检索结果。先给实用建议，再在最后简短说明资料尚未覆盖的内容，不要反复讲资料不足。AAD/NICE 可用于其适用人群内的一般知识；Book 是带章节定位的书籍解释，不等同于最新临床指南；博主文章只能作为通俗解释和观点；体外论文不能外推到人体或成品。正文直接用通俗语言说明，不要写“书里说”“资料指出”“作者认为”等来源转述；只在句末使用给定的数字编号引用，例如[1]；不要在正文中写“书里说”或另列来源清单，页面会在回答下方展示来源。无相关依据时简洁说明缺什么，不要用无关片段凑答案。\n");
             for (var hit : relevantHits) {
                 var chunk = hit.chunk();
                 var source = chunk.source();
                 unique.putIfAbsent(source.id(), new ChatResponse.Source(source.id(), source.publisher(),
                         source.title(), source.section(), source.url(), source.verifiedOn(), source.originalExcerpt()));
-                context.append('[').append(source.id()).append(" · ").append(source.publisher())
-                        .append("] ").append(chunk.text()).append('\n');
+                int citationNumber = new java.util.ArrayList<>(unique.keySet()).indexOf(source.id()) + 1;
+                context.append('[').append(citationNumber).append("] ").append(chunk.text()).append('\n');
             }
             sources = List.copyOf(unique.values());
             prompt = context.append("用户问题：").append(message).toString();
-            if (consultationResult != null) prompt += "\n请用自然的两段左右简短回应，先用一句话真诚回应用户，再针对实际情况给一两条可操作的建议；不要逐条罗列所有可能原因，也不要反复解释边界；不要提问，不要提及程序、模型提示或处理步骤。近期换了产品不代表症状一定发生在更换之后。";
+            if (consultationResult != null) prompt += "\n请先用一句话回应用户，再用一两句话解释可能原因；把实际建议分成2至3条，以编号或短横线逐条呈现，总体简洁，不要在正文重复列出来源。只把可能性描述为可能，不要把用户在多个场景出现相同症状说成已经确认同一种机制，不要根据肤质断定屏障受损，不要根据单个症状或持续时间断定或排除过敏，不要编造具体时间阈值或发生频率；不要提问，不要提及程序、模型提示或处理步骤。近期换了产品不代表症状一定发生在更换之后。";
             if (route == ChatRoute.COMBINED || consultationResult != null) {
                 // Personal context comes only from confirmed H2 data, never inferred from chat.
                 String confirmed = profiles.find(userId)
@@ -121,8 +126,13 @@ public class ChatService {
             // Citations are attached by Java from actual matches, never invented by model text.
             if (consultationResult != null) {
                 consultation.observe(id);
-                answer = answer.replaceAll("【(?:共情回应|当前分析与建议|下一步排查)】", "")
+                answer = answer.replaceAll("\\*\\*([^*]+)\\*\\*", "$1")
+                        .replaceAll("【(?:共情回应|当前分析与建议|下一步排查)】", "")
                         .replaceAll("(?:程序随后会|程序会在回答后)[^。！？\\n]*[。！？]?", "").strip();
+                if (consultation.canInvestigate(id)) {
+                    answer += "\n\n你想继续排查可能的影响因素，还是先整理观察记录？";
+                    return new ChatResponse(answer, route, sources, List.of("继续排查", "需要记录", "暂不需要"));
+                }
                 answer += "\n\n需要我帮你整理一下观察记录吗？";
                 return new ChatResponse(answer, route, sources, List.of("需要记录", "暂不需要"));
             }
@@ -133,7 +143,7 @@ public class ChatService {
     interface Assistant {
         @SystemMessage("你是一位专业、耐心、懂成分的护肤陪伴顾问，不提供医学诊断、处方或药物剂量。"
                 + "根据参考资料和用户亲口提供的信息，用自己的话回答，不大段复制原文，不把未确认的诱因或过敏当成事实。"
-                + "语气自然亲切，像日常对话一样先回应困扰，再给出具体简洁的建议；不要输出【共情回应】等模板标签，也不要说程序或系统将要做什么。"
+                + "语气自然亲切，像日常对话一样先回应困扰，再结合已知线索给出具体建议；建议用纯文本数字或短横线分条呈现，不要使用 Markdown 粗体。不要说“书里说”“资料指出”“作者认为”，不要在正文另列来源清单，引用资料的可点击来源会显示在下方；不要输出【共情回应】等模板标签，也不要说程序或系统将要做什么。"
                 + "如果资料不足就明确说不知道，建议记录症状和近期护肤品以备咨询；不要重复列举无关来源。"
                 + "每次最多询问一个关键问题，用户已明确回答的问题不要重复询问；工具读取的是已确认画像，切勿自动保存推断的过敏史。"
                 + "引用片段只作为其适用范围内的依据，培养或细胞实验不能直接证明成品或个人效果；饮食不能被描述为治疗痤疮。"
