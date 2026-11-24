@@ -9,7 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = {"SKINCARE_LLM_API_KEY=", "spring.datasource.url=jdbc:h2:mem:knowledge-test;DB_CLOSE_DELAY=-1"})
+@SpringBootTest(properties = {"SKINCARE_RERANK_AUTO=false", "SKINCARE_RERANK_MODEL=", "SKINCARE_RERANK_TOKENIZER=", "SKINCARE_LLM_API_KEY=", "spring.datasource.url=jdbc:h2:mem:knowledge-test;DB_CLOSE_DELAY=-1"})
 @AutoConfigureMockMvc
 class KnowledgeControllerTest {
     @Autowired

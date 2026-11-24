@@ -13,6 +13,6 @@
 mvn spring-boot:run
 ```
 
-第一行最前面有一个点和空格：它让两个环境变量保留在当前 PowerShell 窗口。新开窗口后再次执行第一行；文件已存在且校验通过时不会重新下载。模型下载来源为 Hugging Face 的 `Xenova/bge-reranker-base`，脚本使用 SHA-256 检查文件。聊天模型仍使用原来的 `SKINCARE_LLM_API_KEY`，重排模型不使用该密钥。
+第一行最前面有一个点和空格：它让两个环境变量保留在当前 PowerShell 窗口。下载完成后，应用后续会自动检测 `data/reranker/` 下的模型，新开窗口无需再次执行下载脚本。模型下载来源为 Hugging Face 的 `Xenova/bge-reranker-base`，脚本使用 SHA-256 检查文件。聊天模型仍使用原来的 `SKINCARE_LLM_API_KEY`，重排模型不使用该密钥。
 
 只有代码随 GitHub 拉取：书籍 OCR 文字和向量需要按 [书籍导入记录](book-knowledge-import.md) 在本机准备。未配置重排模型时仍可使用本地向量重排，检索结果的 `model` 字段显示当前实际使用的模型。

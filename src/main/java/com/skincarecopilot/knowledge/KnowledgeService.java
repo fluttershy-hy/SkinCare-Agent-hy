@@ -27,18 +27,27 @@ public class KnowledgeService {
     private final List<KnowledgeChunk> curatedChunks;
 
     @Autowired
-    public KnowledgeService(ObjectMapper json) throws IOException {
-        this(loadEntries(json), new BgeSmallZhV15QuantizedEmbeddingModel(Runnable::run), new BookPageSearch(java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_TEXT_DIR", "data/book-text"))),
-                new BookVectorIndex(java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_TEXT_DIR", "data/book-text")), java.nio.file.Path.of(System.getenv().getOrDefault("SKINCARE_BOOK_VECTOR_DIR", "data/book-vectors"))));
+    public KnowledgeService(ObjectMapper json,
+            @org.springframework.beans.factory.annotation.Value("${SKINCARE_BOOK_TEXT_DIR:data/book-text}") String bookTextDir,
+            @org.springframework.beans.factory.annotation.Value("${SKINCARE_BOOK_VECTOR_DIR:data/book-vectors}") String bookVectorDir,
+            @org.springframework.beans.factory.annotation.Value("${SKINCARE_RERANK_MODEL:}") String rerankModel,
+            @org.springframework.beans.factory.annotation.Value("${SKINCARE_RERANK_TOKENIZER:}") String rerankTokenizer,
+            @org.springframework.beans.factory.annotation.Value("${SKINCARE_RERANK_AUTO:true}") boolean rerankAuto) throws IOException {
+        this(loadEntries(json), new BgeSmallZhV15QuantizedEmbeddingModel(Runnable::run),
+                new BookPageSearch(java.nio.file.Path.of(bookTextDir)),
+                new BookVectorIndex(java.nio.file.Path.of(bookTextDir), java.nio.file.Path.of(bookVectorDir)),
+                rerankModel, rerankTokenizer, rerankAuto);
     }
 
     KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model) {
-        this(entries, model, new BookPageSearch(java.nio.file.Path.of("/nonexistent-skincare-test-data")), new BookVectorIndex(java.nio.file.Path.of("/nonexistent-skincare-test-data"), java.nio.file.Path.of("/nonexistent-skincare-test-vectors")));
+        this(entries, model, new BookPageSearch(java.nio.file.Path.of("/nonexistent-skincare-test-data")),
+                new BookVectorIndex(java.nio.file.Path.of("/nonexistent-skincare-test-data"), java.nio.file.Path.of("/nonexistent-skincare-test-vectors")), "", "", false);
     }
 
-    private KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model, BookPageSearch bookPages, BookVectorIndex bookIndex) {
+    private KnowledgeService(List<KnowledgeEntry> entries, EmbeddingModel model, BookPageSearch bookPages, BookVectorIndex bookIndex,
+                             String rerankModel, String rerankTokenizer, boolean rerankAuto) {
         this.bookPages = bookPages;
-        this.reranker = new LocalReranker(System.getenv().getOrDefault("SKINCARE_RERANK_MODEL", ""), System.getenv().getOrDefault("SKINCARE_RERANK_TOKENIZER", ""));
+        this.reranker = new LocalReranker(rerankModel, rerankTokenizer, rerankAuto);
         this.bookIndex = bookIndex;
         this.entries = List.copyOf(entries);
         this.model = model;

@@ -102,15 +102,14 @@ Day 7～9 的餐食请求链、架构图、固定违规样例、演示步骤和�
 
 要求 JDK 17+ 和 Maven 3.9+。项目以 Java 17 为编译目标，固定 Spring Boot 3.5.16、LangChain4j 1.22.0。默认使用 DeepSeek 的 OpenAI 兼容接口，模型需支持工具调用才能查询画像。
 
+先按照下方「一次配置密钥，以后直接启动」创建 `.env` 并填写普通聊天密钥，然后从项目根目录运行：
+
 ```bash
-export SKINCARE_LLM_API_KEY='在终端或环境设置里填入密钥'
-# 默认：SKINCARE_LLM_BASE_URL=https://api.deepseek.com
-# 默认：SKINCARE_LLM_MODEL=deepseek-flash
 mvn test
 mvn spring-boot:run
 ```
 
-在 VS Code 中打开项目文件夹，使用集成终端设置 `SKINCARE_LLM_API_KEY` 并运行上面的 Maven 命令。Windows PowerShell 的设置方式是 `$env:SKINCARE_LLM_API_KEY="你的密钥"`。如果改用 `deepseek-v4-pro`，再设置 `SKINCARE_LLM_MODEL=deepseek-v4-pro`。这里使用的是 OpenAI 兼容接口地址；`https://api.deepseek.com/anthropic` 是另一种协议的地址，不适用于当前 `OpenAiChatModel`。请以 DeepSeek 控制台显示的可用模型和工具调用支持情况为准。
+默认地址是 `https://api.deepseek.com`，默认模型为 `deepseek-flash`；如果更换服务或模型，可在 `.env` 中填写 `SKINCARE_LLM_BASE_URL` 和 `SKINCARE_LLM_MODEL`。这里使用的是 OpenAI 兼容接口，模型需支持工具调用。请以服务商控制台显示的可用模型为准。
 
 打开本机 `http://localhost:8080/`。先为虚构用户填写并勾选确认画像，再点击“保存画像”或“查询画像”。画像写入项目目录下的 `data/`（已被 Git 忽略）；再次启动应用仍可读取。未勾选确认时，后端拒绝保存。`GET /api/profiles/{userId}` 查询，`PUT /api/profiles/{userId}` 保存，保存 JSON 例如 `{"skinType":"油性","allergens":["花生"],"confirmed":true}`。
 
@@ -197,6 +196,29 @@ Day 6 后新增只读产品网页查询能力。在聊天框填写具体产品�
 
 泛红、刺痛等问题会在当前会话中逐步收集近期变化、肤质和伴随感受，并提供快捷回复。检索采用 BM25、向量召回和 RRF；可选的本地 BGE 交叉编码器可在 Windows PowerShell 中通过 `. .\scripts\setup-reranker.ps1` 安装并配置。完整说明见 [渐进咨询和混合检索](docs/consultation-and-search.md)。
 
+### 一次配置密钥，以后直接启动
+
+在项目根目录的 PowerShell 执行一次：
+
+```powershell
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+notepad .env
+```
+
+在打开的 `.env` 中填写需要使用的配置，格式为 `变量名=值`，等号后不要加引号。例如：
+
+```properties
+SKINCARE_LLM_API_KEY=你的普通聊天服务密钥
+SKINCARE_VISION_BASE_URL=你的视觉模型兼容接口地址
+SKINCARE_VISION_MODEL=qwen3-vl-plus
+SKINCARE_VISION_API_KEY=你的视觉模型密钥
+SKINCARE_SEARCH_API_KEY=你的搜索服务密钥
+```
+
+只填写你要使用的功能，联网搜索密钥可留空。保存后关闭记事本，以后在项目根目录直接运行 `mvn spring-boot:run` 即可；无需每次在终端重新输入。修改 `.env` 后需要重启应用。系统环境变量也可以使用，并且优先于 `.env`。`.env` 被 Git 忽略，请不要把密钥写进 `.env.example` 或分享截图中的密钥。
+
+重排模型完成一次 `scripts/setup-reranker.ps1` 下载后，应用会自动检测项目下的 `data/reranker/model.onnx` 和 `data/reranker/tokenizer.json`；新开终端无需再次配置重排模型路径。
+
 ### 痤疮护理：上传照片
 
 页面左侧选择“痤疮护理 · 上传图片”，选择 JPEG/PNG 局部照片并填写描述。系统先让视觉模型描述可见线索，再根据线索检索知识库，结合已确认画像给出分条护理建议和来源；如果提问涉及经期或内分泌，还会检索相关内分泌资料。照片分析的文字结果会加入当前会话，图片不会写入用户画像。此功能需要另行配置支持图片输入、兼容 OpenAI Chat Completions 的视觉模型：
@@ -208,4 +230,4 @@ $env:SKINCARE_VISION_API_KEY="你的视觉模型密钥"
 mvn spring-boot:run
 ```
 
-以上变量只对当前 PowerShell 窗口生效，密钥不要提交到仓库。它们与原来的 `SKINCARE_LLM_API_KEY` 分开：普通聊天仍需要原来的密钥。视觉接口和模型名需以服务商文档及控制台权限为准；每次照片分析会调用两次视觉模型接口，可能产生服务商费用。图片限制 5 MiB、2000 万像素，窗口会在上传前告知图片将发送给所配置的服务商；项目不主动保存图片。书籍数据及向量索引仍需在本机按 `docs/book-knowledge-import.md` 准备。照片分析提供可能的外观类型，不能代替皮肤科诊断或判断个人激素水平。
+也可以用上方 `.env` 的方式保存这些配置；上面 `$env:` 的设置只对当前 PowerShell 窗口生效。密钥不要提交到仓库。它们与原来的 `SKINCARE_LLM_API_KEY` 分开：普通聊天仍需要原来的密钥。视觉接口和模型名需以服务商文档及控制台权限为准；每次照片分析会调用两次视觉模型接口，可能产生服务商费用。图片限制 5 MiB、2000 万像素，窗口会在上传前告知图片将发送给所配置的服务商；项目不主动保存图片。书籍数据及向量索引仍需在本机按 `docs/book-knowledge-import.md` 准备。照片分析提供可能的外观类型，不能代替皮肤科诊断或判断个人激素水平。

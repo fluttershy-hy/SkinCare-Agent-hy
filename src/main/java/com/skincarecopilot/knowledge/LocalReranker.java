@@ -9,8 +9,15 @@ import java.util.*;
 /** 可选的本地 BGE 交叉编码器；未配置模型文件时由调用方使用本地向量重排。 */
 final class LocalReranker implements AutoCloseable {
     private final OnnxScoringModel model;
-    LocalReranker(String modelPath, String tokenizerPath) {
-        if (modelPath.isBlank() && tokenizerPath.isBlank()) { model = null; return; }
+    LocalReranker(String modelPath, String tokenizerPath) { this(modelPath, tokenizerPath, false); }
+    LocalReranker(String modelPath, String tokenizerPath, boolean autoDiscover) {
+        if (modelPath.isBlank() && tokenizerPath.isBlank()) {
+            if (!autoDiscover) { model = null; return; }
+            Path defaultModel = Path.of("data/reranker/model.onnx");
+            Path defaultTokenizer = Path.of("data/reranker/tokenizer.json");
+            if (!Files.isRegularFile(defaultModel) || !Files.isRegularFile(defaultTokenizer)) { model = null; return; }
+            modelPath = defaultModel.toString(); tokenizerPath = defaultTokenizer.toString();
+        }
         if (modelPath.isBlank() || tokenizerPath.isBlank() || !Files.isRegularFile(Path.of(modelPath)) || !Files.isRegularFile(Path.of(tokenizerPath)))
             throw new IllegalArgumentException("重排模型和 tokenizer 必须同时配置为有效文件");
         model = new OnnxScoringModel(modelPath, tokenizerPath);
